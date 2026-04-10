@@ -33,7 +33,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public UserResponse createGuest() {
-        String guestNickname = "손님_" + UUID.randomUUID().toString().substring(0, 8);
+        String guestNickname = "손님" + UUID.randomUUID().toString().substring(0, 6);
         String guestId = UUID.randomUUID().toString();
 
         User guest = User.builder()
