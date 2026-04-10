@@ -1,5 +1,6 @@
 package com.jipsamoye.backend.domain.user.service;
 
+import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 import com.jipsamoye.backend.domain.user.dto.request.UserUpdateRequest;
@@ -22,6 +23,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PetPostRepository petPostRepository;
+    private final FollowRepository followRepository;
 
     @Override
     public UserResponse getProfile(String nickname) {
@@ -29,9 +31,8 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         long postCount = petPostRepository.countByUser(user);
-        // TODO: Phase 3 팔로우 구현 후 실제 카운트로 변경
-        long followerCount = 0;
-        long followingCount = 0;
+        long followerCount = followRepository.countByFollowing(user);
+        long followingCount = followRepository.countByFollower(user);
 
         return UserResponse.of(user, postCount, followerCount, followingCount);
     }
@@ -51,7 +52,9 @@ public class UserServiceImpl implements UserService {
         user.updateProfile(request.getNickname(), request.getBio(), request.getProfileImageUrl());
 
         long postCount = petPostRepository.countByUser(user);
-        return UserResponse.of(user, postCount, 0, 0);
+        long followerCount = followRepository.countByFollowing(user);
+        long followingCount = followRepository.countByFollower(user);
+        return UserResponse.of(user, postCount, followerCount, followingCount);
     }
 
     @Override
