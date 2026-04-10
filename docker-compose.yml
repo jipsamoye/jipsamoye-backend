@@ -25,6 +25,9 @@ services:
       DB_URL: jdbc:mysql://db:3306/jipsamoye?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
       DB_USERNAME: root
       DB_PASSWORD: ${DB_PASSWORD}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
     depends_on:
       db:
         condition: service_healthy
