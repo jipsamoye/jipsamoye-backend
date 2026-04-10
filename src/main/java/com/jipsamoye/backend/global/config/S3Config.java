@@ -10,7 +10,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
-@Profile("s3")
 public class S3Config {
 
     @Value("${cloud.aws.credentials.access-key}")
