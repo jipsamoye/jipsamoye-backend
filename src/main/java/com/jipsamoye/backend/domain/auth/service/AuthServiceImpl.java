@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.domain.auth.service;
 
 import com.jipsamoye.backend.domain.comment.repository.CommentRepository;
+import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
@@ -28,6 +29,7 @@ public class AuthServiceImpl implements AuthService {
     private final PetPostRepository petPostRepository;
     private final CommentRepository commentRepository;
     private final LikeRepository likeRepository;
+    private final FollowRepository followRepository;
     private final HttpSession httpSession;
 
     @Override
@@ -79,7 +81,7 @@ public class AuthServiceImpl implements AuthService {
         }
         petPostRepository.deleteAll(userPosts);
 
-        // TODO: Follow 구현 후 팔로우 데이터 삭제 추가
+        followRepository.deleteAllByFollowerOrFollowing(user, user);
         // TODO: S3 이미지 삭제 추가
 
         userRepository.delete(user);
