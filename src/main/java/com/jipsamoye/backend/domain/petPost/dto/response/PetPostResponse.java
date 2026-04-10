@@ -22,6 +22,7 @@ public class PetPostResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // 탈퇴한 유저의 게시글은 "탈퇴한 사용자"로 표시
     public static PetPostResponse from(PetPost petPost) {
         boolean isUserDeleted = petPost.getUser().isDeleted();
         return PetPostResponse.builder()

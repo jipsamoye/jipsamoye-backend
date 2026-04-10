@@ -13,5 +13,8 @@ public interface CommentService {
 
     CommentResponse updateComment(Long commentId, CommentUpdateRequest request, Long userId);
 
+    /**
+     * 댓글 삭제 — soft delete, 본인 댓글만 가능
+     */
     void deleteComment(Long commentId, Long userId);
 }
