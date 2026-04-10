@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.domain.petPost.service;
 
 import com.jipsamoye.backend.domain.comment.repository.CommentRepository;
+import com.jipsamoye.backend.domain.image.service.ImageService;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
 import com.jipsamoye.backend.domain.petPost.dto.request.PetPostCreateRequest;
 import com.jipsamoye.backend.domain.petPost.dto.request.PetPostUpdateRequest;
@@ -29,6 +30,7 @@ public class PetPostServiceImpl implements PetPostService {
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
+    private final ImageService imageService;
     private final PopularPostScheduler popularPostScheduler;
 
     @Override
@@ -73,6 +75,14 @@ public class PetPostServiceImpl implements PetPostService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
+        // 수정 시 빠진 이미지 S3 삭제
+        if (request.getImageUrls() != null) {
+            java.util.List<String> removedUrls = petPost.getImageUrls().stream()
+                    .filter(url -> !request.getImageUrls().contains(url))
+                    .toList();
+            imageService.deleteImages(removedUrls);
+        }
+
         petPost.update(request.getTitle(), request.getContent(), request.getImageUrls());
         return PetPostResponse.from(petPost);
     }
@@ -87,9 +97,10 @@ public class PetPostServiceImpl implements PetPostService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        // Like hard delete → Comment soft delete → PetPost soft delete
+        // Like hard delete → Comment soft delete → S3 이미지 삭제 → PetPost soft delete
         likeRepository.deleteAllByPetPost(petPost);
         commentRepository.softDeleteAllByPetPost(petPost);
+        imageService.deleteImages(petPost.getImageUrls());
         petPost.softDelete();
     }
 

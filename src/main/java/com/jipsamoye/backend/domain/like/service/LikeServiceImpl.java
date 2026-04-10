@@ -31,6 +31,7 @@ public class LikeServiceImpl implements LikeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        // 좋아요 존재 → hard delete + likeCount -1, 없으면 → 생성 + likeCount +1
         Optional<Like> existingLike = likeRepository.findByPetPostAndUser(petPost, user);
 
         if (existingLike.isPresent()) {

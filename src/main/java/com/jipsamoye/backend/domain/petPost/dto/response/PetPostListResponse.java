@@ -18,6 +18,7 @@ public class PetPostListResponse {
     private String nickname;
     private LocalDateTime createdAt;
 
+    // 탈퇴한 유저의 게시글은 "탈퇴한 사용자"로 표시
     public static PetPostListResponse from(PetPost petPost) {
         boolean isUserDeleted = petPost.getUser().isDeleted();
         return PetPostListResponse.builder()

@@ -18,6 +18,7 @@ public class CommentResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
+    // 탈퇴한 유저의 댓글은 "탈퇴한 사용자"로 표시
     public static CommentResponse from(Comment comment) {
         boolean isUserDeleted = comment.getUser().isDeleted();
         return CommentResponse.builder()
