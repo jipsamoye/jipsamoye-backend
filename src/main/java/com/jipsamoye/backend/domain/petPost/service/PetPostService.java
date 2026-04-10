@@ -2,8 +2,11 @@ package com.jipsamoye.backend.domain.petPost.service;
 
 import com.jipsamoye.backend.domain.petPost.dto.request.PetPostCreateRequest;
 import com.jipsamoye.backend.domain.petPost.dto.request.PetPostUpdateRequest;
+import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
+
+import java.util.List;
 
 public interface PetPostService {
 
@@ -18,4 +21,6 @@ public interface PetPostService {
     void deletePost(Long id, Long userId);
 
     PageResponse<?> searchPosts(String keyword, int page, int size);
+
+    List<PetPostListResponse> getPopularPosts();
 }

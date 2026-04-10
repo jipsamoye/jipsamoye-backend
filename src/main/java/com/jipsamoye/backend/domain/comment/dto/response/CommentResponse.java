@@ -19,12 +19,13 @@ public class CommentResponse {
     private LocalDateTime updatedAt;
 
     public static CommentResponse from(Comment comment) {
+        boolean isUserDeleted = comment.getUser().isDeleted();
         return CommentResponse.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
                 .userId(comment.getUser().getId())
-                .nickname(comment.getUser().getNickname())
-                .profileImageUrl(comment.getUser().getProfileImageUrl())
+                .nickname(isUserDeleted ? "탈퇴한 사용자" : comment.getUser().getNickname())
+                .profileImageUrl(isUserDeleted ? null : comment.getUser().getProfileImageUrl())
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();

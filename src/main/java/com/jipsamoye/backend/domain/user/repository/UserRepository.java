@@ -17,5 +17,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByNickname(String nickname);
 
-    List<User> findAllByRoleAndCreatedAtBefore(Role role, LocalDateTime before);
+    Optional<User> findByNicknameAndDeletedAtIsNull(String nickname);
+
+    boolean existsByNicknameAndDeletedAtIsNull(String nickname);
+
+    List<User> findAllByRoleAndDeletedAtIsNullAndCreatedAtBefore(Role role, LocalDateTime before);
 }

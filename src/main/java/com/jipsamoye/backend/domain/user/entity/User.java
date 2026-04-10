@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -16,6 +18,8 @@ public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    private LocalDateTime deletedAt;
 
     @Column(nullable = false, unique = true, length = 10)
     private String nickname;
@@ -55,5 +59,13 @@ public class User extends BaseEntity {
         if (nickname != null) this.nickname = nickname;
         if (bio != null) this.bio = bio;
         if (profileImageUrl != null) this.profileImageUrl = profileImageUrl;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
     }
 }
