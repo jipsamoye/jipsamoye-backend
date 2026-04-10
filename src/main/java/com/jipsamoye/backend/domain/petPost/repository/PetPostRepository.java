@@ -15,6 +15,8 @@ public interface PetPostRepository extends JpaRepository<PetPost, Long> {
 
     Page<PetPost> findAllByUser(User user, Pageable pageable);
 
+    long countByUser(User user);
+
     @Modifying
     @Query("UPDATE PetPost p SET p.likeCount = p.likeCount + :value WHERE p.id = :id")
     void updateLikeCount(@Param("id") Long id, @Param("value") int value);
