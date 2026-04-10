@@ -2,10 +2,12 @@ package com.jipsamoye.backend.domain.petPost.controller;
 
 import com.jipsamoye.backend.domain.petPost.dto.request.PetPostCreateRequest;
 import com.jipsamoye.backend.domain.petPost.dto.request.PetPostUpdateRequest;
+import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostResponse;
 import com.jipsamoye.backend.domain.petPost.service.PetPostService;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
+import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +24,13 @@ import org.springframework.web.bind.annotation.*;
 public class PetPostController {
 
     private final PetPostService petPostService;
+    private final PopularPostScheduler popularPostScheduler;
+
+    @Operation(summary = "오늘의 멍냥", description = "최근 24시간 내 좋아요 수 상위 게시글을 조회합니다. 1시간 단위 갱신.")
+    @GetMapping("/popular")
+    public ResponseEntity<ApiResponse<java.util.List<PetPostListResponse>>> getPopularPosts() {
+        return ResponseEntity.ok(ApiResponse.success(popularPostScheduler.getPopularPosts()));
+    }
 
     @Operation(summary = "게시글 작성", description = "새 게시글을 작성합니다. 이미지 1~5장 필수.")
     @PostMapping
@@ -66,5 +75,15 @@ public class PetPostController {
             @Parameter(description = "작성자 ID (인증 구현 전 임시)") @RequestParam Long userId) {
         petPostService.deletePost(id, userId);
         return ResponseEntity.ok(ApiResponse.success("게시글 삭제 성공"));
+    }
+
+    @Operation(summary = "게시글 검색", description = "제목 기반으로 게시글을 검색합니다.")
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<PageResponse<?>>> searchPosts(
+            @Parameter(description = "검색 키워드") @RequestParam String q,
+            @Parameter(description = "페이지 번호 (0부터)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size) {
+        PageResponse<?> response = petPostService.searchPosts(q, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

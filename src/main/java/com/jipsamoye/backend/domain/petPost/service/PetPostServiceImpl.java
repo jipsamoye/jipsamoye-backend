@@ -83,4 +83,12 @@ public class PetPostServiceImpl implements PetPostService {
 
         petPostRepository.delete(petPost);
     }
+
+    @Override
+    public PageResponse<PetPostListResponse> searchPosts(String keyword, int page, int size) {
+        Page<PetPostListResponse> postPage = petPostRepository
+                .findByTitleContaining(keyword, PageRequest.of(page, size))
+                .map(PetPostListResponse::from);
+        return PageResponse.from(postPage);
+    }
 }

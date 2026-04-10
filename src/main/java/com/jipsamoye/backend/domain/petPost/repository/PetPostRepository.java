@@ -21,6 +21,11 @@ public interface PetPostRepository extends JpaRepository<PetPost, Long> {
 
     long countByUser(User user);
 
+    @Query("SELECT p FROM PetPost p WHERE p.createdAt >= :since ORDER BY p.likeCount DESC")
+    List<PetPost> findPopularPosts(@Param("since") java.time.LocalDateTime since, Pageable pageable);
+
+    Page<PetPost> findByTitleContaining(String keyword, Pageable pageable);
+
     @Modifying
     @Query("UPDATE PetPost p SET p.likeCount = p.likeCount + :value WHERE p.id = :id")
     void updateLikeCount(@Param("id") Long id, @Param("value") int value);
