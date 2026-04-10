@@ -482,33 +482,35 @@ PetPostRepository에 메서드 추가:
 
 ```
 Phase 1 (기반)
-  1-1 의존성 추가
-  1-2 BackendApplication 수정 (@EnableScheduling)
-  1-3 패키지 구조 세팅
-  1-4 공통 응답 형식
-  1-5 에러 처리
-  1-6 Security + 세션
-  1-7 Enum 타입
-  1-8 S3 설정
+  [x] 1-1 의존성 추가
+  [x] 1-2 BackendApplication 수정 (@EnableScheduling)
+  [x] 1-3 패키지 구조 세팅
+  [x] 1-4 공통 응답 형식 (ApiResponse 통일)
+  [x] 1-5 에러 처리 (ErrorCode, BusinessException, GlobalExceptionHandler)
+  [x] 1-6 Security + 세션 (초기 permitAll)
+  [x] 1-7 Enum 타입 (Provider, Role)
+  [x] 1-8 S3 설정 (@Profile("s3")로 비활성화, 추후 활성화)
 
 Phase 2 (P0 핵심) — 핵심 도메인 먼저, 인증은 나중에
-  2-1 User 엔티티 + Repository (엔티티만, Controller/Service 없이)
-  2-2 PetPost 확장 + CRUD (Swagger로 바로 테스트)
-  2-3 S3 Presigned URL (ImageService/Impl)
-  2-4 댓글 CRUD (CommentService/Impl)
-  2-5 좋아요 (LikeService/Impl)
-  2-6 유저 프로필 (UserController, UserService/Impl)
-  2-7 OAuth2 소셜 로그인
-  2-8 둘러보기 + 인증 공통 + SecurityConfig 인가 규칙 적용
+  [x] 2-1 User 엔티티 + Repository (엔티티만, Controller/Service 없이)
+  [x] 2-2 PetPost 확장 + CRUD (Swagger로 바로 테스트)
+  [ ] 2-3 S3 Presigned URL → S3 버킷 미생성으로 보류, 추후 진행
+  [x] 2-4 댓글 CRUD (CommentService/Impl)
+  [x] 2-5 좋아요 (LikeService/Impl)
+  [x] 2-6 유저 프로필 (UserController, UserService/Impl)
+  [ ] 2-7 OAuth2 소셜 로그인 → 소셜 검수 필요, 추후 진행
+  [x] 2-8 둘러보기 + 인증 공통 (SecurityConfig 인가 규칙은 OAuth2 구현 시 적용)
+
+Phase 2 완료 후 → develop을 main에 머지하여 배포
 
 Phase 3 (P1)
-  3-1 팔로우 (FollowService/Impl) + UserController에 팔로워/팔로잉 API 추가
-  3-2 오늘의 멍냥 스케줄러
-  3-3 검색
-  3-4 게스트 정리 스케줄러
+  [ ] 3-1 팔로우 (FollowService/Impl) + UserController에 팔로워/팔로잉 API 추가
+  [ ] 3-2 오늘의 멍냥 스케줄러
+  [ ] 3-3 검색
+  [ ] 3-4 게스트 정리 스케줄러
 
 Phase 4 (마무리)
-  4-1 통합 테스트
-  4-2 Swagger 정리
-  4-3 배포 검증
+  [ ] 4-1 통합 테스트
+  [ ] 4-2 Swagger 정리
+  [ ] 4-3 배포 검증
 ```
