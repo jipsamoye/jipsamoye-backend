@@ -32,6 +32,7 @@ public class FollowServiceImpl implements FollowService {
         User follower = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        // 자기 자신 팔로우 방지
         if (follower.getId().equals(following.getId())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "자기 자신을 팔로우할 수 없습니다.");
         }

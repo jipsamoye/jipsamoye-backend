@@ -28,7 +28,9 @@ public class ImageServiceImpl implements ImageService {
     @Value("${cloud.aws.region.static}")
     private String region;
 
+    // 허용 확장자: jpg, jpeg, png, webp
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
+    // Presigned URL 만료 시간: 10분
     private static final Duration PRESIGNED_URL_EXPIRATION = Duration.ofMinutes(10);
 
     @Override
