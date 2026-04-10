@@ -16,4 +16,6 @@ public interface PetPostService {
     PetPostResponse updatePost(Long id, PetPostUpdateRequest request, Long userId);
 
     void deletePost(Long id, Long userId);
+
+    PageResponse<?> searchPosts(String keyword, int page, int size);
 }
