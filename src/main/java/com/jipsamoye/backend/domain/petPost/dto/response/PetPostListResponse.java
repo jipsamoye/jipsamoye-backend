@@ -1,0 +1,32 @@
+package com.jipsamoye.backend.domain.petPost.dto.response;
+
+import com.jipsamoye.backend.domain.petPost.entity.PetPost;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.time.LocalDateTime;
+
+@Getter
+@Builder
+public class PetPostListResponse {
+
+    private Long id;
+    private String title;
+    private String thumbnailUrl;
+    private int likeCount;
+    private Long userId;
+    private String nickname;
+    private LocalDateTime createdAt;
+
+    public static PetPostListResponse from(PetPost petPost) {
+        return PetPostListResponse.builder()
+                .id(petPost.getId())
+                .title(petPost.getTitle())
+                .thumbnailUrl(petPost.getImageUrls().isEmpty() ? null : petPost.getImageUrls().get(0))
+                .likeCount(petPost.getLikeCount())
+                .userId(petPost.getUser().getId())
+                .nickname(petPost.getUser().getNickname())
+                .createdAt(petPost.getCreatedAt())
+                .build();
+    }
+}
