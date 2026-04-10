@@ -504,10 +504,10 @@ Phase 2 (P0 핵심) — 핵심 도메인 먼저, 인증은 나중에
 Phase 2 완료 후 → develop을 main에 머지하여 배포
 
 Phase 3 (P1)
-  [ ] 3-1 팔로우 (FollowService/Impl) + UserController에 팔로워/팔로잉 API 추가
-  [ ] 3-2 오늘의 멍냥 스케줄러
-  [ ] 3-3 검색
-  [ ] 3-4 게스트 정리 스케줄러
+  [x] 3-1 팔로우 (FollowService/Impl) + UserController 팔로워/팔로잉 연동
+  [x] 3-2 오늘의 멍냥 스케줄러
+  [x] 3-3 검색
+  [x] 3-4 게스트 정리 스케줄러
 
 Phase 4 (마무리)
   [ ] 4-1 통합 테스트
