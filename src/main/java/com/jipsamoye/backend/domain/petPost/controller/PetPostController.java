@@ -7,7 +7,6 @@ import com.jipsamoye.backend.domain.petPost.dto.response.PetPostResponse;
 import com.jipsamoye.backend.domain.petPost.service.PetPostService;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
-import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,12 +23,11 @@ import org.springframework.web.bind.annotation.*;
 public class PetPostController {
 
     private final PetPostService petPostService;
-    private final PopularPostScheduler popularPostScheduler;
 
     @Operation(summary = "오늘의 멍냥", description = "최근 24시간 내 좋아요 수 상위 게시글을 조회합니다. 1시간 단위 갱신.")
     @GetMapping("/popular")
     public ResponseEntity<ApiResponse<java.util.List<PetPostListResponse>>> getPopularPosts() {
-        return ResponseEntity.ok(ApiResponse.success(popularPostScheduler.getPopularPosts()));
+        return ResponseEntity.ok(ApiResponse.success(petPostService.getPopularPosts()));
     }
 
     @Operation(summary = "게시글 작성", description = "새 게시글을 작성합니다. 이미지 1~5장 필수.")

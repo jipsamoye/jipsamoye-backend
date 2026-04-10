@@ -30,6 +30,10 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        if (user.isDeleted()) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "탈퇴한 사용자입니다.");
+        }
+
         long postCount = petPostRepository.countByUser(user);
         long followerCount = followRepository.countByFollowing(user);
         long followingCount = followRepository.countByFollower(user);

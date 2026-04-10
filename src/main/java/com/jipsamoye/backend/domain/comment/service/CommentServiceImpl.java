@@ -80,6 +80,6 @@ public class CommentServiceImpl implements CommentService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        commentRepository.delete(comment);
+        comment.softDelete();
     }
 }
