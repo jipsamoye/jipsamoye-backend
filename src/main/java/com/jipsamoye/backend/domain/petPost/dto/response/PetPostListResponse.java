@@ -19,13 +19,14 @@ public class PetPostListResponse {
     private LocalDateTime createdAt;
 
     public static PetPostListResponse from(PetPost petPost) {
+        boolean isUserDeleted = petPost.getUser().isDeleted();
         return PetPostListResponse.builder()
                 .id(petPost.getId())
                 .title(petPost.getTitle())
                 .thumbnailUrl(petPost.getImageUrls().isEmpty() ? null : petPost.getImageUrls().get(0))
                 .likeCount(petPost.getLikeCount())
                 .userId(petPost.getUser().getId())
-                .nickname(petPost.getUser().getNickname())
+                .nickname(isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname())
                 .createdAt(petPost.getCreatedAt())
                 .build();
     }

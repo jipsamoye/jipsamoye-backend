@@ -23,6 +23,7 @@ public class PetPostResponse {
     private LocalDateTime updatedAt;
 
     public static PetPostResponse from(PetPost petPost) {
+        boolean isUserDeleted = petPost.getUser().isDeleted();
         return PetPostResponse.builder()
                 .id(petPost.getId())
                 .title(petPost.getTitle())
@@ -30,8 +31,8 @@ public class PetPostResponse {
                 .imageUrls(petPost.getImageUrls())
                 .likeCount(petPost.getLikeCount())
                 .userId(petPost.getUser().getId())
-                .nickname(petPost.getUser().getNickname())
-                .profileImageUrl(petPost.getUser().getProfileImageUrl())
+                .nickname(isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname())
+                .profileImageUrl(isUserDeleted ? null : petPost.getUser().getProfileImageUrl())
                 .createdAt(petPost.getCreatedAt())
                 .updatedAt(petPost.getUpdatedAt())
                 .build();

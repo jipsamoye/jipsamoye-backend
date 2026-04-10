@@ -3,7 +3,6 @@ package com.jipsamoye.backend.domain.auth.service;
 import com.jipsamoye.backend.domain.comment.repository.CommentRepository;
 import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
-import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 import com.jipsamoye.backend.domain.user.dto.response.UserResponse;
 import com.jipsamoye.backend.domain.user.entity.Provider;
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -58,7 +56,9 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         long postCount = petPostRepository.countByUser(user);
-        return UserResponse.of(user, postCount, 0, 0);
+        long followerCount = followRepository.countByFollowing(user);
+        long followingCount = followRepository.countByFollower(user);
+        return UserResponse.of(user, postCount, followerCount, followingCount);
     }
 
     @Override
@@ -73,18 +73,14 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // 연관 데이터 삭제 (FK 순서)
-        List<PetPost> userPosts = petPostRepository.findAllByUser(user);
-        for (PetPost post : userPosts) {
-            likeRepository.deleteAllByPetPost(post);
-            commentRepository.deleteAllByPetPost(post);
-        }
-        petPostRepository.deleteAll(userPosts);
-
-        followRepository.deleteAllByFollowerOrFollowing(user, user);
+        // Like hard delete → Follow hard delete → Comment soft delete → PetPost soft delete → User soft delete
+        likeRepository.deleteAllByUser(user);
+        followRepository.deleteAllByUser(user);
+        commentRepository.softDeleteAllByUser(user);
+        petPostRepository.softDeleteAllByUser(user);
         // TODO: S3 이미지 삭제 추가
 
-        userRepository.delete(user);
+        user.softDelete();
         httpSession.invalidate();
     }
 }
