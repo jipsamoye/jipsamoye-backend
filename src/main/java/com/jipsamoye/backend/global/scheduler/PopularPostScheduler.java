@@ -22,12 +22,12 @@ public class PopularPostScheduler {
     private final PetPostRepository petPostRepository;
     private volatile List<PetPostListResponse> popularPosts = Collections.emptyList();
 
-    @PostConstruct
-    public void init() {
-        refreshPopularPosts();
-    }
+    // @PostConstruct
+    // public void init() {
+    //     refreshPopularPosts();
+    // }
 
-    @Scheduled(fixedRate = 3600000)
+    // @Scheduled(fixedRate = 3600000)
     public void refreshPopularPosts() {
         log.info("오늘의 멍냥 갱신 시작");
         LocalDateTime since = LocalDateTime.now().minusHours(24);

@@ -30,6 +30,9 @@ public interface PetPostRepository extends JpaRepository<PetPost, Long> {
 
     Page<PetPost> findByTitleContaining(String keyword, Pageable pageable);
 
+    @Query("SELECT p FROM PetPost p ORDER BY p.likeCount DESC")
+    List<PetPost> findTop10ByLikeCount(Pageable pageable);
+
     @Modifying
     @Query("UPDATE PetPost p SET p.likeCount = p.likeCount + :value WHERE p.id = :id")
     void updateLikeCount(@Param("id") Long id, @Param("value") int value);

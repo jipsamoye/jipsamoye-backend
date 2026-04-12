@@ -30,6 +30,12 @@ public class PetPostController {
         return ResponseEntity.ok(ApiResponse.success(petPostService.getPopularPosts()));
     }
 
+    @Operation(summary = "좋아요 TOP 10", description = "좋아요 수 기준 상위 10개 게시글을 조회합니다.")
+    @GetMapping("/top10")
+    public ResponseEntity<ApiResponse<java.util.List<PetPostListResponse>>> getTop10Posts() {
+        return ResponseEntity.ok(ApiResponse.success(petPostService.getTop10Posts()));
+    }
+
     @Operation(summary = "게시글 작성", description = "새 게시글을 작성합니다. 이미지 1~5장 필수.")
     @PostMapping
     public ResponseEntity<ApiResponse<PetPostResponse>> createPost(
