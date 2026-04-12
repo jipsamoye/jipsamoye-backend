@@ -116,4 +116,12 @@ public class PetPostServiceImpl implements PetPostService {
     public java.util.List<PetPostListResponse> getPopularPosts() {
         return popularPostScheduler.getPopularPosts();
     }
+
+    @Override
+    public java.util.List<PetPostListResponse> getTop10Posts() {
+        return petPostRepository.findTop10ByLikeCount(PageRequest.of(0, 10))
+                .stream()
+                .map(PetPostListResponse::from)
+                .toList();
+    }
 }
