@@ -48,8 +48,8 @@ public class ImageServiceImpl implements ImageService {
         }
 
         String dirName = request.getDirName();
-        if (!dirName.equals("posts") && !dirName.equals("profiles")) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "dirName은 posts 또는 profiles만 가능합니다.");
+        if (!dirName.equals("posts") && !dirName.equals("profiles") && !dirName.equals("covers")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "dirName은 posts, profiles, covers만 가능합니다.");
         }
 
         String key = dirName + "/" + userId + "/" + UUID.randomUUID() + "." + ext;
