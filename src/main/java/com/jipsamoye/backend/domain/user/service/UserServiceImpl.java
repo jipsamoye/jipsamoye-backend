@@ -53,7 +53,8 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        user.updateProfile(request.getNickname(), request.getBio(), request.getProfileImageUrl());
+        user.updateProfile(request.getNickname(), request.getBio(), request.getProfileImageUrl(),
+                request.getCoverImageUrl(), request.getSocialLinks());
 
         long postCount = petPostRepository.countByUser(user);
         long followerCount = followRepository.countByFollowing(user);

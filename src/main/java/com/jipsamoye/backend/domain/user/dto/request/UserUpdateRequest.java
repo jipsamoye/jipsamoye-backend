@@ -1,10 +1,13 @@
 package com.jipsamoye.backend.domain.user.dto.request;
 
+import com.jipsamoye.backend.domain.user.entity.SocialLink;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Getter
 @NoArgsConstructor
@@ -21,4 +24,10 @@ public class UserUpdateRequest {
 
     @Schema(description = "프로필 이미지 URL")
     private String profileImageUrl;
+
+    @Schema(description = "커버 이미지 URL")
+    private String coverImageUrl;
+
+    @Schema(description = "외부 링크 목록", example = "[{\"type\": \"INSTAGRAM\", \"url\": \"https://instagram.com/mydog\"}]")
+    private List<SocialLink> socialLinks;
 }
