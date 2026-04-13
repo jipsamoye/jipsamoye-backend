@@ -1,5 +1,8 @@
 package com.jipsamoye.backend.domain.like.service;
 
+import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
+import com.jipsamoye.backend.global.response.PageResponse;
+
 public interface LikeService {
 
     /**
@@ -8,4 +11,6 @@ public interface LikeService {
      * @return true: 좋아요 추가, false: 좋아요 취소
      */
     boolean toggleLike(Long postId, Long userId);
+
+    PageResponse<PetPostListResponse> getLikedPosts(Long userId, int page, int size);
 }

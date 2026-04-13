@@ -2,13 +2,17 @@ package com.jipsamoye.backend.domain.like.service;
 
 import com.jipsamoye.backend.domain.like.entity.Like;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
+import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
+import com.jipsamoye.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,5 +50,16 @@ public class LikeServiceImpl implements LikeService {
             petPostRepository.updateLikeCount(postId, 1);
             return true;
         }
+    }
+
+    @Override
+    public PageResponse<PetPostListResponse> getLikedPosts(Long userId, int page, int size) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Page<PetPostListResponse> likedPage = likeRepository
+                .findAllByUserOrderByCreatedAtDesc(user, PageRequest.of(page, size))
+                .map(like -> PetPostListResponse.from(like.getPetPost()));
+        return PageResponse.from(likedPage);
     }
 }
