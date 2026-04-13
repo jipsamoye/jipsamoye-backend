@@ -35,7 +35,7 @@ public class PetPost extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @JdbcTypeCode(SqlTypes.JSON)

@@ -19,8 +19,7 @@ public class PetPostCreateRequest {
     @Size(max = 100, message = "제목은 100자 이하로 입력해주세요.")
     private String title;
 
-    @Schema(description = "게시글 내용", example = "오늘 산책하고 왔어요~")
-    @NotBlank(message = "내용을 입력해주세요.")
+    @Schema(description = "게시글 내용 (선택)", example = "오늘 산책하고 왔어요~")
     @Size(max = 5000, message = "내용은 5000자 이하로 입력해주세요.")
     private String content;
 
