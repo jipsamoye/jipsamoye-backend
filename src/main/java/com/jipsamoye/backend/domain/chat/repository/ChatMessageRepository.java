@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
     List<ChatMessage> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    List<ChatMessage> findByIdLessThanOrderByCreatedAtDesc(Long id, Pageable pageable);
 }
