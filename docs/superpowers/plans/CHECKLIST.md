@@ -7,10 +7,10 @@
 ## Phase 0 — 공통 설정
 > 📄 `2026-04-14-phase0-common.md`
 
-- [ ] Task 0-1: OSIV 비활성화
-- [ ] Task 0-2: WebSocket 의존성 추가
-- [ ] Task 0-3: WebSocketConfig 생성
-- [ ] Task 0-4: Phase 0 배포
+- [x] Task 0-1: OSIV 비활성화
+- [x] Task 0-2: WebSocket 의존성 추가
+- [x] Task 0-3: WebSocketConfig 생성
+- [x] Task 0-4: Phase 0 배포
 
 ---
 
@@ -37,7 +37,7 @@
 - [ ] Task 2-4: NotificationResponse DTO 생성
 - [ ] Task 2-5: NotificationService 생성 (WebSocket)
 - [ ] Task 2-6: NotificationController 생성
-- [ ] Task 2-7: 기존 서비스 알림 연동 (Like, Comment, Follow)
+- [ ] Task 2-7: 기존 서비스 알림 연동 (Like, Follow) — 댓글 알림은 추후 추가
 - [ ] Task 2-8: Phase 2 배포
 
 ---

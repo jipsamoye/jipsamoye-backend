@@ -20,8 +20,6 @@ package com.jipsamoye.backend.domain.notification.entity;
 
 public enum NotificationType {
     LIKE,
-    COMMENT,
-    REPLY,
     FOLLOW
 }
 ```
@@ -399,7 +397,6 @@ git commit -m "feat: 알림 API 컨트롤러 생성"
 
 **Files:**
 - Modify: `src/main/java/com/jipsamoye/backend/domain/like/service/LikeServiceImpl.java`
-- Modify: `src/main/java/com/jipsamoye/backend/domain/comment/service/CommentServiceImpl.java`
 - Modify: `src/main/java/com/jipsamoye/backend/domain/follow/service/FollowServiceImpl.java`
 
 - [ ] **Step 1: LikeServiceImpl — 좋아요 시 알림**
@@ -412,24 +409,7 @@ notificationService.send(
     user.getNickname() + "님이 게시글에 좋아요를 눌렀습니다");
 ```
 
-- [ ] **Step 2: CommentServiceImpl — 댓글/대댓글 시 알림**
-
-createComment에서:
-```java
-if (parent == null) {
-    notificationService.send(
-        petPost.getUser(), user,
-        NotificationType.COMMENT, postId,
-        user.getNickname() + "님이 게시글에 댓글을 달았습니다");
-} else {
-    notificationService.send(
-        parent.getUser(), user,
-        NotificationType.REPLY, parent.getId(),
-        user.getNickname() + "님이 댓글에 답글을 달았습니다");
-}
-```
-
-- [ ] **Step 3: FollowServiceImpl — 팔로우 시 알림**
+- [ ] **Step 2: FollowServiceImpl — 팔로우 시 알림**
 
 toggleFollow에서 팔로우 추가 시:
 ```java
@@ -448,9 +428,8 @@ Expected: BUILD SUCCESSFUL
 
 ```bash
 git add src/main/java/com/jipsamoye/backend/domain/like/service/LikeServiceImpl.java
-git add src/main/java/com/jipsamoye/backend/domain/comment/service/CommentServiceImpl.java
 git add src/main/java/com/jipsamoye/backend/domain/follow/service/FollowServiceImpl.java
-git commit -m "feat: 좋아요/댓글/팔로우 시 알림 발송 연동"
+git commit -m "feat: 좋아요/팔로우 시 알림 발송 연동"
 ```
 
 ---
