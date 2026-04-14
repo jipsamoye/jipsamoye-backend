@@ -20,4 +20,5 @@ public class ChatWebSocketController {
         ChatMessageResponse response = chatService.sendMessage(request.getUserId(), request.getContent());
         messagingTemplate.convertAndSend("/sub/chat/room", response);
     }
+
 }

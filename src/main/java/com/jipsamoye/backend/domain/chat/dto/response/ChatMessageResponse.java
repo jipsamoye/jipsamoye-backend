@@ -11,15 +11,19 @@ import java.time.LocalDateTime;
 public class ChatMessageResponse {
 
     private Long id;
+    private Long userId;
+    private String nickname;
+    private String profileImageUrl;
     private String content;
-    private String anonymousNickname;
     private LocalDateTime createdAt;
 
     public static ChatMessageResponse from(ChatMessage message) {
         return ChatMessageResponse.builder()
                 .id(message.getId())
+                .userId(message.getSender().getId())
+                .nickname(message.getSender().getNickname())
+                .profileImageUrl(message.getSender().getProfileImageUrl())
                 .content(message.getContent())
-                .anonymousNickname(message.getAnonymousNickname())
                 .createdAt(message.getCreatedAt())
                 .build();
     }

@@ -25,13 +25,9 @@ public class ChatMessage extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(nullable = false)
-    private String anonymousNickname;
-
     @Builder
-    public ChatMessage(User sender, String content, String anonymousNickname) {
+    public ChatMessage(User sender, String content) {
         this.sender = sender;
         this.content = content;
-        this.anonymousNickname = anonymousNickname;
     }
 }
