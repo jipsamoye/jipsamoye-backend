@@ -6,11 +6,13 @@ import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 import com.jipsamoye.backend.domain.user.dto.request.UserUpdateRequest;
 import com.jipsamoye.backend.domain.user.dto.response.UserResponse;
 import com.jipsamoye.backend.domain.user.entity.User;
+import com.jipsamoye.backend.domain.user.event.ProfileUpdatedEvent;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PetPostRepository petPostRepository;
     private final FollowRepository followRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public UserResponse getProfile(String nickname) {
@@ -55,6 +58,9 @@ public class UserServiceImpl implements UserService {
 
         user.updateProfile(request.getNickname(), request.getBio(), request.getProfileImageUrl(),
                 request.getCoverImageUrl(), request.getSocialLinks());
+
+        eventPublisher.publishEvent(new ProfileUpdatedEvent(
+                user.getId(), user.getNickname(), user.getProfileImageUrl()));
 
         long postCount = petPostRepository.countByUser(user);
         long followerCount = followRepository.countByFollowing(user);

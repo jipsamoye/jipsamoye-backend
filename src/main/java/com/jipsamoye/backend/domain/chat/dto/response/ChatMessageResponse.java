@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Builder
 public class ChatMessageResponse {
 
+    private String type;
     private Long id;
     private Long userId;
     private String nickname;
@@ -19,6 +20,7 @@ public class ChatMessageResponse {
 
     public static ChatMessageResponse from(ChatMessage message) {
         return ChatMessageResponse.builder()
+                .type("CHAT_MESSAGE")
                 .id(message.getId())
                 .userId(message.getSender().getId())
                 .nickname(message.getSender().getNickname())
