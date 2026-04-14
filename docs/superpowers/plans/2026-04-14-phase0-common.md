@@ -107,40 +107,7 @@ git commit -m "feat: WebSocket + STOMP 설정 추가"
 
 ---
 
-### Task 0-4: AsyncConfig 생성
-
-**Files:**
-- Create: `src/main/java/com/jipsamoye/backend/global/config/AsyncConfig.java`
-
-- [ ] **Step 1: AsyncConfig 작성**
-
-```java
-package com.jipsamoye.backend.global.config;
-
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableAsync;
-
-@Configuration
-@EnableAsync
-public class AsyncConfig {
-}
-```
-
-- [ ] **Step 2: 빌드 확인**
-
-Run: `./gradlew build -x test`
-Expected: BUILD SUCCESSFUL
-
-- [ ] **Step 3: 커밋**
-
-```bash
-git add src/main/java/com/jipsamoye/backend/global/config/AsyncConfig.java
-git commit -m "feat: @Async 설정 추가"
-```
-
----
-
-### Task 0-5: Phase 0 배포
+### Task 0-4: Phase 0 배포
 
 - [ ] **Step 1: feature → develop → main PR/머지**
 - [ ] **Step 2: feature 브랜치 삭제, develop 최신 동기화**

@@ -10,8 +10,7 @@
 - [ ] Task 0-1: OSIV 비활성화
 - [ ] Task 0-2: WebSocket 의존성 추가
 - [ ] Task 0-3: WebSocketConfig 생성
-- [ ] Task 0-4: AsyncConfig 생성
-- [ ] Task 0-5: Phase 0 배포
+- [ ] Task 0-4: Phase 0 배포
 
 ---
 
@@ -36,7 +35,7 @@
 - [ ] Task 2-2: Notification 엔티티 생성
 - [ ] Task 2-3: NotificationRepository 생성
 - [ ] Task 2-4: NotificationResponse DTO 생성
-- [ ] Task 2-5: NotificationService 생성 (@Async + WebSocket)
+- [ ] Task 2-5: NotificationService 생성 (WebSocket)
 - [ ] Task 2-6: NotificationController 생성
 - [ ] Task 2-7: 기존 서비스 알림 연동 (Like, Comment, Follow)
 - [ ] Task 2-8: Phase 2 배포

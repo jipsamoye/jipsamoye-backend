@@ -229,7 +229,7 @@ public interface NotificationService {
 }
 ```
 
-- [ ] **Step 2: Impl 작성 (@Async + WebSocket 전송)**
+- [ ] **Step 2: Impl 작성 (WebSocket 전송)**
 
 ```java
 package com.jipsamoye.backend.domain.notification.service;
@@ -247,7 +247,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -260,7 +259,6 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
-    @Async
     @Override
     @Transactional
     public void send(User receiver, User sender, NotificationType type, Long targetId, String message) {
@@ -323,7 +321,7 @@ Expected: BUILD SUCCESSFUL
 
 ```bash
 git add src/main/java/com/jipsamoye/backend/domain/notification/service/
-git commit -m "feat: NotificationService 생성 (비동기 WebSocket 알림 전송)"
+git commit -m "feat: NotificationService 생성 (WebSocket 알림 전송)"
 ```
 
 ---

@@ -124,7 +124,7 @@ spring.jpa.open-in-view: false
 | 팔로우 | FollowServiceImpl | "{닉네임}님이 회원님을 팔로우했습니다" |
 
 - 본인 행동에는 알림 안 보냄
-- 알림 생성은 `@Async`로 비동기 처리 (API 응답 지연 방지)
+- 알림 생성은 동기 처리 (WebSocket 전송 자체가 비동기이므로 API 응답 지연 없음)
 
 ---
 
@@ -241,7 +241,6 @@ domain/
 ```
 global/config/
 ├── WebSocketConfig.java  ← STOMP 설정 (알림 + 채팅 + DM 공유)
-├── AsyncConfig.java      ← @Async 설정 (알림 비동기 발송)
 ```
 
 ---
