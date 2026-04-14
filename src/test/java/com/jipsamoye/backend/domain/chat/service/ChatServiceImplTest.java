@@ -36,7 +36,7 @@ class ChatServiceImplTest {
     private UserRepository userRepository;
 
     @Test
-    @DisplayName("메시지 전송 - 성공, 랜덤 닉네임 생성")
+    @DisplayName("메시지 전송 - 성공")
     void sendMessage_success() {
         Long userId = 1L;
         User user = mock(User.class);
@@ -46,26 +46,7 @@ class ChatServiceImplTest {
 
         verify(chatMessageRepository).save(argThat(msg ->
                 msg.getContent().equals("안녕하세요") &&
-                msg.getAnonymousNickname() != null &&
-                msg.getAnonymousNickname().startsWith("익명의 ")));
-    }
-
-    @Test
-    @DisplayName("메시지 전송 - 같은 유저는 같은 닉네임 유지")
-    void sendMessage_sameNicknameForSameUser() {
-        Long userId = 1L;
-        User user = mock(User.class);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        chatService.sendMessage(userId, "첫 번째");
-        chatService.sendMessage(userId, "두 번째");
-
-        var nicknames = new java.util.ArrayList<String>();
-        verify(chatMessageRepository, times(2)).save(argThat(msg -> {
-            nicknames.add(msg.getAnonymousNickname());
-            return true;
-        }));
-        assertThat(nicknames.get(0)).isEqualTo(nicknames.get(1));
+                msg.getSender() == user));
     }
 
     @Test
@@ -80,16 +61,24 @@ class ChatServiceImplTest {
     @Test
     @DisplayName("최근 메시지 조회 - 시간순 정렬")
     void getRecentMessages_orderedByTime() {
+        User sender1 = mock(User.class);
+        when(sender1.getId()).thenReturn(1L);
+        when(sender1.getNickname()).thenReturn("멍집사");
+
+        User sender2 = mock(User.class);
+        when(sender2.getId()).thenReturn(2L);
+        when(sender2.getNickname()).thenReturn("냥집사");
+
         ChatMessage msg1 = mock(ChatMessage.class);
         when(msg1.getId()).thenReturn(1L);
         when(msg1.getContent()).thenReturn("첫 번째");
-        when(msg1.getAnonymousNickname()).thenReturn("익명의 멍집사1");
+        when(msg1.getSender()).thenReturn(sender1);
         when(msg1.getCreatedAt()).thenReturn(LocalDateTime.now().minusMinutes(1));
 
         ChatMessage msg2 = mock(ChatMessage.class);
         when(msg2.getId()).thenReturn(2L);
         when(msg2.getContent()).thenReturn("두 번째");
-        when(msg2.getAnonymousNickname()).thenReturn("익명의 냥집사2");
+        when(msg2.getSender()).thenReturn(sender2);
         when(msg2.getCreatedAt()).thenReturn(LocalDateTime.now());
 
         when(chatMessageRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 50)))
