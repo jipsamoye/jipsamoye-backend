@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.domain.chat.service;
 
 import com.jipsamoye.backend.domain.chat.dto.response.ChatMessageResponse;
+import com.jipsamoye.backend.domain.chat.dto.response.ChatMessagesResponse;
 import com.jipsamoye.backend.domain.chat.entity.ChatMessage;
 import com.jipsamoye.backend.domain.chat.repository.ChatMessageRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,15 +26,28 @@ public class ChatServiceImpl implements ChatService {
     private final UserRepository userRepository;
 
     @Override
-    public List<ChatMessageResponse> getRecentMessages(int size) {
-        List<ChatMessageResponse> messages = chatMessageRepository
-                .findAllByOrderByCreatedAtDesc(PageRequest.of(0, size))
-                .stream()
+    public ChatMessagesResponse getMessages(int size, Long beforeId) {
+        List<ChatMessage> fetched;
+        if (beforeId == null) {
+            fetched = chatMessageRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, size + 1));
+        } else {
+            fetched = chatMessageRepository.findByIdLessThanOrderByCreatedAtDesc(beforeId, PageRequest.of(0, size + 1));
+        }
+
+        boolean hasMore = fetched.size() > size;
+        if (hasMore) {
+            fetched = fetched.subList(0, size);
+        }
+
+        List<ChatMessageResponse> messages = new ArrayList<>(fetched.stream()
                 .map(ChatMessageResponse::from)
-                .toList();
-        List<ChatMessageResponse> reversed = new java.util.ArrayList<>(messages);
-        Collections.reverse(reversed);
-        return reversed;
+                .toList());
+        Collections.reverse(messages);
+
+        return ChatMessagesResponse.builder()
+                .messages(messages)
+                .hasMore(hasMore)
+                .build();
     }
 
     @Override

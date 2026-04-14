@@ -1,6 +1,6 @@
 package com.jipsamoye.backend.domain.chat.service;
 
-import com.jipsamoye.backend.domain.chat.dto.response.ChatMessageResponse;
+import com.jipsamoye.backend.domain.chat.dto.response.ChatMessagesResponse;
 import com.jipsamoye.backend.domain.chat.entity.ChatMessage;
 import com.jipsamoye.backend.domain.chat.repository.ChatMessageRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
@@ -21,7 +21,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceImplTest {
@@ -59,35 +61,82 @@ class ChatServiceImplTest {
     }
 
     @Test
-    @DisplayName("최근 메시지 조회 - 시간순 정렬")
-    void getRecentMessages_orderedByTime() {
-        User sender1 = mock(User.class);
-        when(sender1.getId()).thenReturn(1L);
-        when(sender1.getNickname()).thenReturn("멍집사");
-
-        User sender2 = mock(User.class);
-        when(sender2.getId()).thenReturn(2L);
-        when(sender2.getNickname()).thenReturn("냥집사");
+    @DisplayName("최신 메시지 조회 - beforeId 없으면 최신 메시지")
+    void getMessages_latest() {
+        User sender = mock(User.class);
+        when(sender.getId()).thenReturn(1L);
+        when(sender.getNickname()).thenReturn("멍집사");
 
         ChatMessage msg1 = mock(ChatMessage.class);
         when(msg1.getId()).thenReturn(1L);
         when(msg1.getContent()).thenReturn("첫 번째");
-        when(msg1.getSender()).thenReturn(sender1);
+        when(msg1.getSender()).thenReturn(sender);
         when(msg1.getCreatedAt()).thenReturn(LocalDateTime.now().minusMinutes(1));
 
         ChatMessage msg2 = mock(ChatMessage.class);
         when(msg2.getId()).thenReturn(2L);
         when(msg2.getContent()).thenReturn("두 번째");
-        when(msg2.getSender()).thenReturn(sender2);
+        when(msg2.getSender()).thenReturn(sender);
         when(msg2.getCreatedAt()).thenReturn(LocalDateTime.now());
 
-        when(chatMessageRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 50)))
+        when(chatMessageRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 31)))
                 .thenReturn(List.of(msg2, msg1));
 
-        List<ChatMessageResponse> result = chatService.getRecentMessages(50);
+        ChatMessagesResponse response = chatService.getMessages(30, null);
 
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).getContent()).isEqualTo("첫 번째");
-        assertThat(result.get(1).getContent()).isEqualTo("두 번째");
+        assertThat(response.getMessages()).hasSize(2);
+        assertThat(response.getMessages().get(0).getContent()).isEqualTo("첫 번째");
+        assertThat(response.getMessages().get(1).getContent()).isEqualTo("두 번째");
+        assertThat(response.isHasMore()).isFalse();
+    }
+
+    @Test
+    @DisplayName("이전 메시지 조회 - beforeId로 커서 페이지네이션")
+    void getMessages_beforeId() {
+        User sender = mock(User.class);
+        when(sender.getId()).thenReturn(1L);
+        when(sender.getNickname()).thenReturn("멍집사");
+
+        ChatMessage msg = mock(ChatMessage.class);
+        when(msg.getId()).thenReturn(5L);
+        when(msg.getContent()).thenReturn("이전 메시지");
+        when(msg.getSender()).thenReturn(sender);
+        when(msg.getCreatedAt()).thenReturn(LocalDateTime.now());
+
+        when(chatMessageRepository.findByIdLessThanOrderByCreatedAtDesc(10L, PageRequest.of(0, 31)))
+                .thenReturn(List.of(msg));
+
+        ChatMessagesResponse response = chatService.getMessages(30, 10L);
+
+        assertThat(response.getMessages()).hasSize(1);
+        assertThat(response.getMessages().get(0).getContent()).isEqualTo("이전 메시지");
+        assertThat(response.isHasMore()).isFalse();
+    }
+
+    @Test
+    @DisplayName("hasMore - 더 불러올 메시지가 있으면 true")
+    void getMessages_hasMore() {
+        User sender = mock(User.class);
+        when(sender.getId()).thenReturn(1L);
+        when(sender.getNickname()).thenReturn("멍집사");
+
+        // size=2로 요청하면 3개를 조회 → 3개가 오면 hasMore=true
+        List<ChatMessage> messages = new java.util.ArrayList<>();
+        for (int i = 3; i >= 1; i--) {
+            ChatMessage msg = mock(ChatMessage.class);
+            lenient().when(msg.getId()).thenReturn((long) i);
+            lenient().when(msg.getContent()).thenReturn("메시지" + i);
+            lenient().when(msg.getSender()).thenReturn(sender);
+            lenient().when(msg.getCreatedAt()).thenReturn(LocalDateTime.now());
+            messages.add(msg);
+        }
+
+        when(chatMessageRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 3)))
+                .thenReturn(messages);
+
+        ChatMessagesResponse response = chatService.getMessages(2, null);
+
+        assertThat(response.getMessages()).hasSize(2);
+        assertThat(response.isHasMore()).isTrue();
     }
 }
