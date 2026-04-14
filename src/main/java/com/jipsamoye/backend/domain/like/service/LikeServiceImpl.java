@@ -2,6 +2,8 @@ package com.jipsamoye.backend.domain.like.service;
 
 import com.jipsamoye.backend.domain.like.entity.Like;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
+import com.jipsamoye.backend.domain.notification.entity.NotificationType;
+import com.jipsamoye.backend.domain.notification.service.NotificationService;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
@@ -26,6 +28,7 @@ public class LikeServiceImpl implements LikeService {
     private final LikeRepository likeRepository;
     private final PetPostRepository petPostRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -48,6 +51,10 @@ public class LikeServiceImpl implements LikeService {
                     .user(user)
                     .build());
             petPostRepository.updateLikeCount(postId, 1);
+            notificationService.send(
+                    petPost.getUser(), user,
+                    NotificationType.LIKE, postId,
+                    user.getNickname() + "님이 게시글에 좋아요를 눌렀습니다");
             return true;
         }
     }

@@ -8,10 +8,16 @@
 
 ## Git 워크플로우
 - 브랜치: `feature/{기능명}` → `develop` 머지 → `develop`에서 `main` PR/머지
-- IMPORTANT: develop에 먼저 머지한 후 main으로 PR. main에 직접 머지하지 않는다
+- IMPORTANT: feature 브랜치를 main에 직접 머지하는 것은 절대 금지. 반드시 develop에 먼저 머지한 후 develop → main PR을 생성한다
+- IMPORTANT: main PR 머지 = 운영 배포이므로 반드시 사용자 확인 후 머지
 - PR 머지 후 feature 브랜치 삭제
 - 머지/푸시 후 develop 브랜치가 항상 최신 상태인지 확인
-- main 푸시 → GitHub Actions 자동 배포 (EC2 + Docker)
+
+## 배포
+- 서버 주소: http://43.203.165.97/
+- Swagger UI: http://43.203.165.97/swagger-ui/index.html
+- SSH 접속: `ssh -i /Users/jys/jipsamoye.pem ubuntu@43.203.165.97`
+- 배포 과정: feature → develop 머지 → develop push → main PR 생성 → 사용자 확인 → main 머지 → GitHub Actions 자동배포 (EC2 + Docker)
 
 ## PR 템플릿
 ```

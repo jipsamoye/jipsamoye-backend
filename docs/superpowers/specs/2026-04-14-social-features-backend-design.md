@@ -96,7 +96,7 @@ spring.jpa.open-in-view: false
 | id | Long | PK |
 | receiver | User (ManyToOne) | 알림 받는 사람 |
 | sender | User (ManyToOne) | 알림 발생시킨 사람 |
-| type | NotificationType (Enum) | LIKE, COMMENT, REPLY, FOLLOW |
+| type | NotificationType (Enum) | LIKE, FOLLOW (추후 COMMENT, REPLY 추가) |
 | targetId | Long | 관련 게시글/댓글 ID |
 | message | String | 알림 메시지 |
 | isRead | boolean | 읽음 여부 |
@@ -119,8 +119,6 @@ spring.jpa.open-in-view: false
 | 이벤트 | 발생 위치 | 알림 메시지 |
 |--------|----------|-----------|
 | 좋아요 | LikeServiceImpl | "{닉네임}님이 게시글에 좋아요를 눌렀습니다" |
-| 댓글 | CommentServiceImpl | "{닉네임}님이 게시글에 댓글을 달았습니다" |
-| 대댓글 | CommentServiceImpl | "{닉네임}님이 댓글에 답글을 달았습니다" |
 | 팔로우 | FollowServiceImpl | "{닉네임}님이 회원님을 팔로우했습니다" |
 
 - 본인 행동에는 알림 안 보냄

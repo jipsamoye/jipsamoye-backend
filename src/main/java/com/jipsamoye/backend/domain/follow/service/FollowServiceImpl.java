@@ -3,6 +3,8 @@ package com.jipsamoye.backend.domain.follow.service;
 import com.jipsamoye.backend.domain.follow.dto.response.FollowUserResponse;
 import com.jipsamoye.backend.domain.follow.entity.Follow;
 import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
+import com.jipsamoye.backend.domain.notification.entity.NotificationType;
+import com.jipsamoye.backend.domain.notification.service.NotificationService;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
@@ -23,6 +25,7 @@ public class FollowServiceImpl implements FollowService {
 
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -47,6 +50,10 @@ public class FollowServiceImpl implements FollowService {
                     .follower(follower)
                     .following(following)
                     .build());
+            notificationService.send(
+                    following, follower,
+                    NotificationType.FOLLOW, follower.getId(),
+                    follower.getNickname() + "님이 회원님을 팔로우했습니다");
             return true;
         }
     }
