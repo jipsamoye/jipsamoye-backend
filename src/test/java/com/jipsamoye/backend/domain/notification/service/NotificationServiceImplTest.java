@@ -72,6 +72,22 @@ class NotificationServiceImplTest {
     }
 
     @Test
+    @DisplayName("알림 전송 - 동일 sender+targetId+type 중복 시 알림 생성하지 않음")
+    void send_skipDuplicateNotification() {
+        User receiver = mock(User.class);
+        User sender = mock(User.class);
+        when(receiver.getId()).thenReturn(1L);
+        when(sender.getId()).thenReturn(2L);
+        when(notificationRepository.existsBySenderAndTargetIdAndType(sender, 10L, NotificationType.LIKE))
+                .thenReturn(true);
+
+        notificationService.send(receiver, sender, NotificationType.LIKE, 10L, "테스트");
+
+        verify(notificationRepository, never()).save(any(Notification.class));
+        verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
+    }
+
+    @Test
     @DisplayName("개별 읽음 처리 - 본인 알림이 아니면 FORBIDDEN")
     void markAsRead_forbidden() {
         Long notificationId = 1L;
