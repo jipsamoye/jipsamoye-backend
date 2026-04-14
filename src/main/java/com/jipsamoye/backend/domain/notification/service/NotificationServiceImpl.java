@@ -75,4 +75,12 @@ public class NotificationServiceImpl implements NotificationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         return notificationRepository.countByReceiverAndIsReadFalse(user);
     }
+
+    @Override
+    @Transactional
+    public void markAllAsRead(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        notificationRepository.markAllAsRead(user);
+    }
 }

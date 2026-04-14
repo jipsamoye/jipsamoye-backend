@@ -37,6 +37,13 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.success("알림 읽음 처리 완료"));
     }
 
+    @Operation(summary = "알림 전체 읽음 처리")
+    @PatchMapping("/read-all")
+    public ResponseEntity<ApiResponse<Void>> markAllAsRead(@RequestParam Long userId) {
+        notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok(ApiResponse.success("알림 전체 읽음 처리 완료"));
+    }
+
     @Operation(summary = "미읽은 알림 수")
     @GetMapping("/unread-count")
     public ResponseEntity<ApiResponse<Long>> getUnreadCount(@RequestParam Long userId) {
