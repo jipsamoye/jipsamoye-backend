@@ -20,4 +20,4 @@ cloud:
       static: ap-northeast-2
 
 cdn:
-  image-base-url: ${CDN_IMAGE_BASE_URL}
+  image-base-url: ${CDN_IMAGE_BASE_URL:https://${AWS_S3_BUCKET}.s3.ap-northeast-2.amazonaws.com}
