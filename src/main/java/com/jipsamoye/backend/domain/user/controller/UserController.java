@@ -39,6 +39,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success("프로필 수정 성공", response));
     }
 
+    @Operation(summary = "닉네임 중복 확인", description = "닉네임 사용 가능 여부를 확인합니다.")
+    @GetMapping("/check-nickname")
+    public ResponseEntity<ApiResponse<Boolean>> checkNickname(
+            @Parameter(description = "확인할 닉네임") @RequestParam String nickname) {
+        return ResponseEntity.ok(ApiResponse.success(userService.isNicknameAvailable(nickname)));
+    }
+
     @Operation(summary = "유저 게시글 목록", description = "특정 유저가 작성한 게시글 목록을 조회합니다.")
     @GetMapping("/{nickname}/posts")
     public ResponseEntity<ApiResponse<PageResponse<PetPostListResponse>>> getUserPosts(

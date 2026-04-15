@@ -18,4 +18,6 @@ public interface UserService {
     UserResponse updateProfile(Long userId, UserUpdateRequest request);
 
     PageResponse<PetPostListResponse> getUserPosts(String nickname, int page, int size);
+
+    boolean isNicknameAvailable(String nickname);
 }
