@@ -30,7 +30,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "build/libs/*.jar,docker-compose.yml,Dockerfile,nginx/nginx.conf"
+          source: "build/libs/*.jar,docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/upstream.conf,nginx/upstream-blue.conf,nginx/upstream-green.conf,scripts/deploy.sh"
           target: "/home/ubuntu/app"
 
       - name: Deploy on EC2
@@ -39,11 +39,13 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+          command_timeout: 300s
           script: |
             cd /home/ubuntu/app
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" > .env
             echo "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}" >> .env
             echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env
             echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> .env
-            docker compose down
-            docker compose up -d --build
+            chmod +x scripts/deploy.sh
+            bash scripts/deploy.sh
