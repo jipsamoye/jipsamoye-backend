@@ -39,23 +39,32 @@ public class DiscordAppender extends AppenderBase<ILoggingEvent> {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         StringBuilder sb = new StringBuilder();
-        sb.append("🚨 **[ERROR]** `").append(timestamp).append("`\\n");
-        sb.append("**Logger:** `").append(event.getLoggerName()).append("`\\n");
-        sb.append("**Message:** ").append(escapeJson(event.getFormattedMessage())).append("\\n");
+        sb.append("\uD83D\uDEA8 **서버 에러 발생**\\n");
+        sb.append("━━━━━━━━━━━━━━━\\n");
+        sb.append("\u23F0 ").append(timestamp).append("\\n");
+        sb.append("\uD83D\uDCCD `").append(event.getLoggerName()).append("`\\n");
+        sb.append("\u274C ").append(escapeJson(event.getFormattedMessage())).append("\\n");
 
         IThrowableProxy throwable = event.getThrowableProxy();
         if (throwable != null) {
-            sb.append("**Exception:** `").append(throwable.getClassName()).append(": ").append(escapeJson(throwable.getMessage())).append("`\\n");
-            sb.append("```\\n");
+            sb.append("\\n**Exception:** `").append(throwable.getClassName());
+            if (throwable.getMessage() != null) {
+                sb.append(": ").append(escapeJson(throwable.getMessage()));
+            }
+            sb.append("`\\n");
+
             StackTraceElementProxy[] stackTrace = throwable.getStackTraceElementProxyArray();
-            int limit = Math.min(stackTrace.length, 10);
-            for (int i = 0; i < limit; i++) {
-                sb.append(stackTrace[i].getSTEAsString()).append("\\n");
+            if (stackTrace.length > 0) {
+                sb.append("```\\n");
+                int limit = Math.min(stackTrace.length, 10);
+                for (int i = 0; i < limit; i++) {
+                    sb.append(stackTrace[i].getSTEAsString()).append("\\n");
+                }
+                if (stackTrace.length > 10) {
+                    sb.append("... ").append(stackTrace.length - 10).append(" more\\n");
+                }
+                sb.append("```");
             }
-            if (stackTrace.length > 10) {
-                sb.append("... ").append(stackTrace.length - 10).append(" more\\n");
-            }
-            sb.append("```");
         }
 
         return sb.toString();
