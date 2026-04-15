@@ -2,6 +2,7 @@ package com.jipsamoye.backend.domain.user.dto.response;
 
 import com.jipsamoye.backend.domain.user.entity.SocialLink;
 import com.jipsamoye.backend.domain.user.entity.User;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -23,13 +24,13 @@ public class UserResponse {
     private long followingCount;
     private LocalDateTime createdAt;
 
-    public static UserResponse of(User user, long postCount, long followerCount, long followingCount) {
+    public static UserResponse of(User user, long postCount, long followerCount, long followingCount, ImageCdnConverter converter) {
         return UserResponse.builder()
                 .id(user.getId())
                 .nickname(user.getNickname())
                 .bio(user.getBio())
-                .profileImageUrl(user.getProfileImageUrl())
-                .coverImageUrl(user.getCoverImageUrl())
+                .profileImageUrl(converter.toCdnUrl(user.getProfileImageUrl()))
+                .coverImageUrl(converter.toCdnUrl(user.getCoverImageUrl()))
                 .socialLinks(user.getSocialLinks())
                 .postCount(postCount)
                 .followerCount(followerCount)

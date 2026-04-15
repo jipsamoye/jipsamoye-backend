@@ -4,6 +4,7 @@ import com.jipsamoye.backend.domain.image.dto.request.PresignedUrlRequest;
 import com.jipsamoye.backend.domain.image.dto.response.PresignedUrlResponse;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +28,7 @@ public class ImageServiceImpl implements ImageService {
 
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
+    private final ImageCdnConverter imageCdnConverter;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -74,7 +76,8 @@ public class ImageServiceImpl implements ImageService {
 
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
 
-        String imageUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
+        String s3Url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
+        String imageUrl = imageCdnConverter.toCdnUrl(s3Url);
 
         return PresignedUrlResponse.builder()
                 .presignedUrl(presignedRequest.url().toString())
@@ -84,7 +87,7 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     public void deleteImage(String imageUrl) {
-        String key = extractKeyFromUrl(imageUrl);
+        String key = imageCdnConverter.extractKey(imageUrl);
         if (key == null) return;
 
         try {
@@ -102,17 +105,5 @@ public class ImageServiceImpl implements ImageService {
         if (imageUrls == null || imageUrls.isEmpty()) return;
         imageUrls.forEach(this::deleteImage);
     }
-
-    /**
-     * imageUrl에서 S3 key 추출
-     * https://bucket.s3.region.amazonaws.com/posts/1/uuid.jpg → posts/1/uuid.jpg
-     */
-    private String extractKeyFromUrl(String imageUrl) {
-        if (imageUrl == null || imageUrl.isBlank()) return null;
-        String prefix = String.format("https://%s.s3.%s.amazonaws.com/", bucket, region);
-        if (imageUrl.startsWith(prefix)) {
-            return imageUrl.substring(prefix.length());
-        }
-        return null;
-    }
 }
+

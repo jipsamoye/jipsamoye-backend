@@ -12,6 +12,7 @@ import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final PetPostRepository petPostRepository;
     private final UserRepository userRepository;
+    private final ImageCdnConverter imageCdnConverter;
 
     @Override
     @Transactional
@@ -42,7 +44,7 @@ public class CommentServiceImpl implements CommentService {
                 .build();
 
         Comment saved = commentRepository.save(comment);
-        return CommentResponse.from(saved);
+        return CommentResponse.from(saved, imageCdnConverter);
     }
 
     @Override
@@ -52,7 +54,7 @@ public class CommentServiceImpl implements CommentService {
 
         Page<CommentResponse> commentPage = commentRepository
                 .findAllByPetPostOrderByCreatedAtDesc(petPost, PageRequest.of(page, size))
-                .map(CommentResponse::from);
+                .map(comment -> CommentResponse.from(comment, imageCdnConverter));
         return PageResponse.from(commentPage);
     }
 
@@ -67,7 +69,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         comment.updateContent(request.getContent());
-        return CommentResponse.from(comment);
+        return CommentResponse.from(comment, imageCdnConverter);
     }
 
     @Override

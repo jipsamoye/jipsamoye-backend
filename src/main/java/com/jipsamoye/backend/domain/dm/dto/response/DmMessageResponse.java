@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.domain.dm.dto.response;
 
 import com.jipsamoye.backend.domain.dm.entity.DmMessage;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -18,13 +19,13 @@ public class DmMessageResponse {
     private LocalDateTime readAt;
     private LocalDateTime createdAt;
 
-    public static DmMessageResponse from(DmMessage message) {
+    public static DmMessageResponse from(DmMessage message, ImageCdnConverter converter) {
         return DmMessageResponse.builder()
                 .id(message.getId())
                 .senderId(message.getSender().getId())
                 .senderNickname(message.getSender().getNickname())
                 .content(message.getContent())
-                .imageUrl(message.getImageUrl())
+                .imageUrl(converter.toCdnUrl(message.getImageUrl()))
                 .readAt(message.getReadAt())
                 .createdAt(message.getCreatedAt())
                 .build();

@@ -11,6 +11,7 @@ import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ public class UserServiceImpl implements UserService {
     private final PetPostRepository petPostRepository;
     private final FollowRepository followRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ImageCdnConverter imageCdnConverter;
 
     @Override
     public UserResponse getProfile(String nickname) {
@@ -41,7 +43,7 @@ public class UserServiceImpl implements UserService {
         long followerCount = followRepository.countByFollowing(user);
         long followingCount = followRepository.countByFollower(user);
 
-        return UserResponse.of(user, postCount, followerCount, followingCount);
+        return UserResponse.of(user, postCount, followerCount, followingCount, imageCdnConverter);
     }
 
     @Override
@@ -65,7 +67,7 @@ public class UserServiceImpl implements UserService {
         long postCount = petPostRepository.countByUser(user);
         long followerCount = followRepository.countByFollowing(user);
         long followingCount = followRepository.countByFollower(user);
-        return UserResponse.of(user, postCount, followerCount, followingCount);
+        return UserResponse.of(user, postCount, followerCount, followingCount, imageCdnConverter);
     }
 
     @Override
