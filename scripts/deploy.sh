@@ -26,6 +26,17 @@ echo "배포 타겟: $TARGET"
 # .env 파일 생성
 cd "$APP_DIR"
 
+# DB + Nginx가 안 떠있으면 먼저 시작
+echo "DB + Nginx 확인 및 시작..."
+docker compose up -d db nginx
+
+# DB 헬스체크 대기
+echo "DB 헬스체크 대기..."
+until docker exec jipsamoye-db mysqladmin ping -h localhost --silent 2>/dev/null; do
+    sleep 2
+done
+echo "DB 준비 완료"
+
 # 타겟 컨테이너 빌드 + 시작
 echo "[$TARGET] 컨테이너 빌드 및 시작..."
 docker compose --profile "$TARGET" up -d --build "app-$TARGET"
