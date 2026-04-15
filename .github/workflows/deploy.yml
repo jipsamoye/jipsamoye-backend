@@ -30,7 +30,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "build/libs/*.jar,docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/upstream.conf,nginx/upstream-blue.conf,nginx/upstream-green.conf,scripts/deploy.sh"
+          source: "build/libs/*.jar,docker-compose.yml,Dockerfile,nginx/nginx.conf,nginx/upstream.conf,nginx/upstream-blue.conf,nginx/upstream-green.conf,scripts/deploy.sh,monitoring/prometheus/prometheus.yml,monitoring/grafana/provisioning/datasources/prometheus.yml"
           target: "/home/ubuntu/app"
 
       - name: Deploy on EC2

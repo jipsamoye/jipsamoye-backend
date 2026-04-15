@@ -39,9 +39,9 @@ echo "배포 타겟: $TARGET"
 
 cd "$APP_DIR"
 
-# DB + Nginx가 안 떠있으면 먼저 시작
-echo "DB + Nginx 확인 및 시작..."
-docker compose up -d db nginx
+# DB + Nginx + 모니터링이 안 떠있으면 먼저 시작
+echo "DB + Nginx + Prometheus + Grafana 확인 및 시작..."
+docker compose up -d db nginx prometheus grafana
 
 # DB 헬스체크 대기
 echo "DB 헬스체크 대기..."
