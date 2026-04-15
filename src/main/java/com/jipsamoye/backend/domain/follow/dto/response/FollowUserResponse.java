@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.domain.follow.dto.response;
 
 import com.jipsamoye.backend.domain.user.entity.User;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,11 +13,11 @@ public class FollowUserResponse {
     private String nickname;
     private String profileImageUrl;
 
-    public static FollowUserResponse from(User user) {
+    public static FollowUserResponse from(User user, ImageCdnConverter converter) {
         return FollowUserResponse.builder()
                 .id(user.getId())
                 .nickname(user.getNickname())
-                .profileImageUrl(user.getProfileImageUrl())
+                .profileImageUrl(converter.toCdnUrl(user.getProfileImageUrl()))
                 .build();
     }
 }
