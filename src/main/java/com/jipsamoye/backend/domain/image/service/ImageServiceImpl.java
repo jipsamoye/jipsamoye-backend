@@ -4,7 +4,6 @@ import com.jipsamoye.backend.domain.image.dto.request.PresignedUrlRequest;
 import com.jipsamoye.backend.domain.image.dto.response.PresignedUrlResponse;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,13 +27,15 @@ public class ImageServiceImpl implements ImageService {
 
     private final S3Presigner s3Presigner;
     private final S3Client s3Client;
-    private final ImageCdnConverter imageCdnConverter;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
     @Value("${cloud.aws.region.static}")
     private String region;
+
+    @Value("${cdn.image-base-url:https://images.jipsamoye.com}")
+    private String cdnBaseUrl;
 
     // 허용 확장자: jpg, jpeg, png, webp
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp");
@@ -76,8 +77,7 @@ public class ImageServiceImpl implements ImageService {
 
         PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
 
-        String s3Url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, key);
-        String imageUrl = imageCdnConverter.toCdnUrl(s3Url);
+        String imageUrl = cdnBaseUrl + "/" + key;
 
         return PresignedUrlResponse.builder()
                 .presignedUrl(presignedRequest.url().toString())
@@ -87,7 +87,7 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     public void deleteImage(String imageUrl) {
-        String key = imageCdnConverter.extractKey(imageUrl);
+        String key = extractKeyFromUrl(imageUrl);
         if (key == null) return;
 
         try {
@@ -105,5 +105,17 @@ public class ImageServiceImpl implements ImageService {
         if (imageUrls == null || imageUrls.isEmpty()) return;
         imageUrls.forEach(this::deleteImage);
     }
-}
 
+    private String extractKeyFromUrl(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) return null;
+        String s3Prefix = String.format("https://%s.s3.%s.amazonaws.com/", bucket, region);
+        String cdnPrefix = cdnBaseUrl + "/";
+        if (imageUrl.startsWith(cdnPrefix)) {
+            return imageUrl.substring(cdnPrefix.length());
+        }
+        if (imageUrl.startsWith(s3Prefix)) {
+            return imageUrl.substring(s3Prefix.length());
+        }
+        return null;
+    }
+}

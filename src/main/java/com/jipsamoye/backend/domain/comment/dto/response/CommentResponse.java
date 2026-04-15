@@ -1,7 +1,6 @@
 package com.jipsamoye.backend.domain.comment.dto.response;
 
 import com.jipsamoye.backend.domain.comment.entity.Comment;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -20,14 +19,14 @@ public class CommentResponse {
     private LocalDateTime updatedAt;
 
     // 탈퇴한 유저의 댓글은 "탈퇴한 사용자"로 표시
-    public static CommentResponse from(Comment comment, ImageCdnConverter converter) {
+    public static CommentResponse from(Comment comment) {
         boolean isUserDeleted = comment.getUser().isDeleted();
         return CommentResponse.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
                 .userId(comment.getUser().getId())
                 .nickname(isUserDeleted ? "탈퇴한 사용자" : comment.getUser().getNickname())
-                .profileImageUrl(isUserDeleted ? null : converter.toCdnUrl(comment.getUser().getProfileImageUrl()))
+                .profileImageUrl(isUserDeleted ? null : comment.getUser().getProfileImageUrl())
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();

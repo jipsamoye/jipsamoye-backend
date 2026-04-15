@@ -1,7 +1,6 @@
 package com.jipsamoye.backend.domain.chat.dto.response;
 
 import com.jipsamoye.backend.domain.chat.entity.ChatMessage;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -19,13 +18,13 @@ public class ChatMessageResponse {
     private String content;
     private LocalDateTime createdAt;
 
-    public static ChatMessageResponse from(ChatMessage message, ImageCdnConverter converter) {
+    public static ChatMessageResponse from(ChatMessage message) {
         return ChatMessageResponse.builder()
                 .type("CHAT_MESSAGE")
                 .id(message.getId())
                 .userId(message.getSender().getId())
                 .nickname(message.getSender().getNickname())
-                .profileImageUrl(converter.toCdnUrl(message.getSender().getProfileImageUrl()))
+                .profileImageUrl(message.getSender().getProfileImageUrl())
                 .content(message.getContent())
                 .createdAt(message.getCreatedAt())
                 .build();
