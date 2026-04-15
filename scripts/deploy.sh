@@ -81,7 +81,7 @@ done
 # Nginx upstream 전환
 echo "Nginx upstream을 $TARGET으로 전환..."
 cp "$NGINX_CONF_DIR/upstream-$TARGET.conf" "$NGINX_CONF_DIR/upstream.conf"
-docker exec jipsamoye-nginx nginx -s reload
+docker restart jipsamoye-nginx
 
 # active-color 파일 갱신
 echo "$TARGET" > "$ACTIVE_FILE"
