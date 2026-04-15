@@ -65,5 +65,33 @@ services:
       db:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: jipsamoye-prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: jipsamoye-grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    depends_on:
+      - prometheus
+
 volumes:
   mysql-data:
+  prometheus-data:
+  grafana-data:
