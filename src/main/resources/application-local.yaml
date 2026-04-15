@@ -14,3 +14,6 @@ cloud:
       secret-key: ${AWS_SECRET_KEY}
     region:
       static: ap-northeast-2
+
+cdn:
+  image-base-url: https://${AWS_S3_BUCKET}.s3.ap-northeast-2.amazonaws.com

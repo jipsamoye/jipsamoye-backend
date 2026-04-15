@@ -18,3 +18,6 @@ cloud:
       secret-key: ${AWS_SECRET_KEY}
     region:
       static: ap-northeast-2
+
+cdn:
+  image-base-url: ${CDN_IMAGE_BASE_URL}
