@@ -7,7 +7,6 @@ import com.jipsamoye.backend.domain.dm.repository.DmRoomRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.exception.BusinessException;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,9 +36,6 @@ class DmServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
-
-    @Mock
-    private ImageCdnConverter imageCdnConverter;
 
     @Test
     @DisplayName("채팅방 생성 - 성공")

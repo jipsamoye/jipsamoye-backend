@@ -1,7 +1,6 @@
 package com.jipsamoye.backend.domain.petPost.dto.response;
 
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -24,17 +23,17 @@ public class PetPostResponse {
     private LocalDateTime updatedAt;
 
     // 탈퇴한 유저의 게시글은 "탈퇴한 사용자"로 표시
-    public static PetPostResponse from(PetPost petPost, ImageCdnConverter converter) {
+    public static PetPostResponse from(PetPost petPost) {
         boolean isUserDeleted = petPost.getUser().isDeleted();
         return PetPostResponse.builder()
                 .id(petPost.getId())
                 .title(petPost.getTitle())
                 .content(petPost.getContent())
-                .imageUrls(converter.toCdnUrls(petPost.getImageUrls()))
+                .imageUrls(petPost.getImageUrls())
                 .likeCount(petPost.getLikeCount())
                 .userId(petPost.getUser().getId())
                 .nickname(isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname())
-                .profileImageUrl(isUserDeleted ? null : converter.toCdnUrl(petPost.getUser().getProfileImageUrl()))
+                .profileImageUrl(isUserDeleted ? null : petPost.getUser().getProfileImageUrl())
                 .createdAt(petPost.getCreatedAt())
                 .updatedAt(petPost.getUpdatedAt())
                 .build();

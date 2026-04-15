@@ -11,7 +11,6 @@ import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,7 +29,6 @@ public class AuthServiceImpl implements AuthService {
     private final LikeRepository likeRepository;
     private final FollowRepository followRepository;
     private final HttpSession httpSession;
-    private final ImageCdnConverter imageCdnConverter;
 
     @Override
     @Transactional
@@ -49,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
         User saved = userRepository.save(guest);
         httpSession.setAttribute("userId", saved.getId());
 
-        return UserResponse.of(saved, 0, 0, 0, imageCdnConverter);
+        return UserResponse.of(saved, 0, 0, 0);
     }
 
     @Override
@@ -60,7 +58,7 @@ public class AuthServiceImpl implements AuthService {
         long postCount = petPostRepository.countByUser(user);
         long followerCount = followRepository.countByFollowing(user);
         long followingCount = followRepository.countByFollower(user);
-        return UserResponse.of(user, postCount, followerCount, followingCount, imageCdnConverter);
+        return UserResponse.of(user, postCount, followerCount, followingCount);
     }
 
     @Override

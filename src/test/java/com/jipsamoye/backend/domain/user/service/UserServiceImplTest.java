@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -32,9 +31,6 @@ class UserServiceImplTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
-
-    @Mock
-    private ImageCdnConverter imageCdnConverter;
 
     @Test
     @DisplayName("닉네임 중복 확인 - 사용 가능")

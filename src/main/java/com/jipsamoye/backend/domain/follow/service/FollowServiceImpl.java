@@ -10,7 +10,6 @@ import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,7 +26,6 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-    private final ImageCdnConverter imageCdnConverter;
 
     @Override
     @Transactional
@@ -67,7 +65,7 @@ public class FollowServiceImpl implements FollowService {
 
         Page<FollowUserResponse> followerPage = followRepository
                 .findAllByFollowing(user, PageRequest.of(page, size))
-                .map(follow -> FollowUserResponse.from(follow.getFollower(), imageCdnConverter));
+                .map(follow -> FollowUserResponse.from(follow.getFollower()));
         return PageResponse.from(followerPage);
     }
 
@@ -78,7 +76,7 @@ public class FollowServiceImpl implements FollowService {
 
         Page<FollowUserResponse> followingPage = followRepository
                 .findAllByFollower(user, PageRequest.of(page, size))
-                .map(follow -> FollowUserResponse.from(follow.getFollowing(), imageCdnConverter));
+                .map(follow -> FollowUserResponse.from(follow.getFollowing()));
         return PageResponse.from(followingPage);
     }
 }

@@ -11,7 +11,6 @@ import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
-import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +27,6 @@ public class DmServiceImpl implements DmService {
     private final DmRoomRepository dmRoomRepository;
     private final DmMessageRepository dmMessageRepository;
     private final UserRepository userRepository;
-    private final ImageCdnConverter imageCdnConverter;
 
     @Override
     public List<DmRoomResponse> getRooms(Long userId) {
@@ -98,7 +96,7 @@ public class DmServiceImpl implements DmService {
 
         Page<DmMessageResponse> messagePage = dmMessageRepository
                 .findAllByRoomOrderByCreatedAtDesc(room, PageRequest.of(page, size))
-                .map(msg -> DmMessageResponse.from(msg, imageCdnConverter));
+                .map(DmMessageResponse::from);
         return PageResponse.from(messagePage);
     }
 
@@ -123,6 +121,6 @@ public class DmServiceImpl implements DmService {
                 .build();
 
         dmMessageRepository.save(message);
-        return DmMessageResponse.from(message, imageCdnConverter);
+        return DmMessageResponse.from(message);
     }
 }
