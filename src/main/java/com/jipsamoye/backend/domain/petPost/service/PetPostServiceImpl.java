@@ -15,6 +15,7 @@ import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
 import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +33,7 @@ public class PetPostServiceImpl implements PetPostService {
     private final CommentRepository commentRepository;
     private final ImageService imageService;
     private final PopularPostScheduler popularPostScheduler;
+    private final ImageCdnConverter imageCdnConverter;
 
     @Override
     @Transactional
@@ -47,14 +49,14 @@ public class PetPostServiceImpl implements PetPostService {
                 .build();
 
         PetPost saved = petPostRepository.save(petPost);
-        return PetPostResponse.from(saved);
+        return PetPostResponse.from(saved, imageCdnConverter);
     }
 
     @Override
     public PetPostResponse getPost(Long id) {
         PetPost petPost = petPostRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
-        return PetPostResponse.from(petPost);
+        return PetPostResponse.from(petPost, imageCdnConverter);
     }
 
     @Override
@@ -84,7 +86,7 @@ public class PetPostServiceImpl implements PetPostService {
         }
 
         petPost.update(request.getTitle(), request.getContent(), request.getImageUrls());
-        return PetPostResponse.from(petPost);
+        return PetPostResponse.from(petPost, imageCdnConverter);
     }
 
     @Override

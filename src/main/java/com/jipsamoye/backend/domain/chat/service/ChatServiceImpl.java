@@ -8,6 +8,7 @@ import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
+import com.jipsamoye.backend.global.util.ImageCdnConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class ChatServiceImpl implements ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final ImageCdnConverter imageCdnConverter;
 
     @Override
     public ChatMessagesResponse getMessages(int size, Long beforeId) {
@@ -40,7 +42,7 @@ public class ChatServiceImpl implements ChatService {
         }
 
         List<ChatMessageResponse> messages = new ArrayList<>(fetched.stream()
-                .map(ChatMessageResponse::from)
+                .map(msg -> ChatMessageResponse.from(msg, imageCdnConverter))
                 .toList());
         Collections.reverse(messages);
 
@@ -62,6 +64,6 @@ public class ChatServiceImpl implements ChatService {
                 .build();
 
         chatMessageRepository.save(message);
-        return ChatMessageResponse.from(message);
+        return ChatMessageResponse.from(message, imageCdnConverter);
     }
 }
