@@ -29,6 +29,7 @@ services:
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
     depends_on:
       db:
         condition: service_healthy
@@ -47,6 +48,7 @@ services:
       AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
     depends_on:
       db:
         condition: service_healthy

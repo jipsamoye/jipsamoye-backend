@@ -1,3 +1,7 @@
+discord:
+  webhook:
+    url: ${DISCORD_WEBHOOK_URL:}
+
 spring:
   datasource:
     url: ${DB_URL}
