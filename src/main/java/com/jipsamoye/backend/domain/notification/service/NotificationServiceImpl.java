@@ -29,7 +29,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void send(User receiver, User sender, NotificationType type, Long targetId, String message) {
         if (receiver.getId().equals(sender.getId())) return;
-        if (notificationRepository.existsBySenderAndTargetIdAndType(sender, targetId, type)) return;
+        if (notificationRepository.existsBySenderAndReceiverAndTargetIdAndType(sender, receiver, targetId, type)) return;
 
         Notification notification = Notification.builder()
                 .receiver(receiver)

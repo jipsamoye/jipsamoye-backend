@@ -16,7 +16,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     long countByReceiverAndIsReadFalse(User receiver);
 
-    boolean existsBySenderAndTargetIdAndType(User sender, Long targetId, NotificationType type);
+    boolean existsBySenderAndReceiverAndTargetIdAndType(User sender, User receiver, Long targetId, NotificationType type);
 
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.receiver = :receiver AND n.isRead = false")

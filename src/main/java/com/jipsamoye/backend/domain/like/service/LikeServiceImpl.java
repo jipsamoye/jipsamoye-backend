@@ -3,7 +3,7 @@ package com.jipsamoye.backend.domain.like.service;
 import com.jipsamoye.backend.domain.like.entity.Like;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
 import com.jipsamoye.backend.domain.notification.entity.NotificationType;
-import com.jipsamoye.backend.domain.notification.service.NotificationService;
+import com.jipsamoye.backend.domain.notification.event.NotificationEvent;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
@@ -13,6 +13,7 @@ import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class LikeServiceImpl implements LikeService {
     private final LikeRepository likeRepository;
     private final PetPostRepository petPostRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -51,10 +52,10 @@ public class LikeServiceImpl implements LikeService {
                     .user(user)
                     .build());
             petPostRepository.updateLikeCount(postId, 1);
-            notificationService.send(
+            eventPublisher.publishEvent(new NotificationEvent(
                     petPost.getUser(), user,
                     NotificationType.LIKE, postId,
-                    user.getNickname() + "님이 게시글에 좋아요를 눌렀습니다");
+                    user.getNickname() + "님이 게시글에 좋아요를 눌렀습니다"));
             return true;
         }
     }

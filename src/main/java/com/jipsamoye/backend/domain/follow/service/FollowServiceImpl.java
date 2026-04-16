@@ -4,13 +4,14 @@ import com.jipsamoye.backend.domain.follow.dto.response.FollowUserResponse;
 import com.jipsamoye.backend.domain.follow.entity.Follow;
 import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.notification.entity.NotificationType;
-import com.jipsamoye.backend.domain.notification.service.NotificationService;
+import com.jipsamoye.backend.domain.notification.event.NotificationEvent;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class FollowServiceImpl implements FollowService {
 
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -50,10 +51,10 @@ public class FollowServiceImpl implements FollowService {
                     .follower(follower)
                     .following(following)
                     .build());
-            notificationService.send(
+            eventPublisher.publishEvent(new NotificationEvent(
                     following, follower,
                     NotificationType.FOLLOW, follower.getId(),
-                    follower.getNickname() + "님이 회원님을 팔로우했습니다");
+                    follower.getNickname() + "님이 회원님을 팔로우했습니다"));
             return true;
         }
     }
