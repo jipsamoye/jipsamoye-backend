@@ -72,13 +72,13 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    @DisplayName("알림 전송 - 동일 sender+targetId+type 중복 시 알림 생성하지 않음")
+    @DisplayName("알림 전송 - 동일 sender+receiver+targetId+type 중복 시 알림 생성하지 않음")
     void send_skipDuplicateNotification() {
         User receiver = mock(User.class);
         User sender = mock(User.class);
         when(receiver.getId()).thenReturn(1L);
         when(sender.getId()).thenReturn(2L);
-        when(notificationRepository.existsBySenderAndTargetIdAndType(sender, 10L, NotificationType.LIKE))
+        when(notificationRepository.existsBySenderAndReceiverAndTargetIdAndType(sender, receiver, 10L, NotificationType.LIKE))
                 .thenReturn(true);
 
         notificationService.send(receiver, sender, NotificationType.LIKE, 10L, "테스트");
