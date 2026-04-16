@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public class DiscordAppender extends AppenderBase<ILoggingEvent> {
 
@@ -38,10 +39,27 @@ public class DiscordAppender extends AppenderBase<ILoggingEvent> {
                 .atZone(ZoneId.of("Asia/Seoul"))
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
+        Map<String, String> mdc = event.getMDCPropertyMap();
+        String requestMethod = mdc.getOrDefault("requestMethod", "");
+        String requestUri = mdc.getOrDefault("requestUri", "");
+        String clientIp = mdc.getOrDefault("clientIp", "");
+        String userAgent = mdc.getOrDefault("userAgent", "");
+
         StringBuilder sb = new StringBuilder();
         sb.append("\uD83D\uDEA8 **서버 에러 발생**\\n");
         sb.append("━━━━━━━━━━━━━━━\\n");
         sb.append("\u23F0 ").append(timestamp).append("\\n");
+
+        if (!requestUri.isEmpty()) {
+            sb.append("\uD83D\uDD17 `").append(requestMethod).append(" ").append(requestUri).append("`\\n");
+        }
+        if (!clientIp.isEmpty()) {
+            sb.append("\uD83D\uDC64 IP: `").append(clientIp).append("`\\n");
+        }
+        if (!userAgent.isEmpty()) {
+            sb.append("\uD83C\uDF10 `").append(escapeJson(truncate(userAgent, 80))).append("`\\n");
+        }
+
         sb.append("\uD83D\uDCCD `").append(event.getLoggerName()).append("`\\n");
         sb.append("\u274C ").append(escapeJson(event.getFormattedMessage())).append("\\n");
 
@@ -87,6 +105,11 @@ public class DiscordAppender extends AppenderBase<ILoggingEvent> {
 
         conn.getResponseCode();
         conn.disconnect();
+    }
+
+    private String truncate(String text, int maxLength) {
+        if (text.length() <= maxLength) return text;
+        return text.substring(0, maxLength) + "...";
     }
 
     private String escapeJson(String text) {
