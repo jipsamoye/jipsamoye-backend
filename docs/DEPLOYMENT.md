@@ -29,19 +29,23 @@ GitHub Actions 자동배포 (EC2 + Docker Blue-Green)
 
 | 항목 | 값 |
 |------|-----|
-| 서버 주소 | http://43.203.165.97/ |
-| Swagger UI | http://43.203.165.97/swagger-ui/index.html |
-| SSH 접속 | `ssh -i /Users/jys/jipsamoye.pem ubuntu@43.203.165.97` |
+| Swagger UI | `http://{EC2_IP}/swagger-ui/index.html` |
+| SSH 접속 | `ssh -i /Users/jys/jipsamoye.pem ubuntu@{EC2_IP}` |
+
+> **IP 주소 유동적**: Elastic IP를 사용하지 않으므로 EC2를 껐다 켜면 IP가 매번 바뀐다.
+> EC2 재시작 후 아래 2곳을 수동으로 업데이트해야 한다:
+> 1. **GitHub Secrets** → `HOST` 값을 새 IP로 변경 (GitHub Actions 배포에 사용)
+> 2. **Cloudflare DNS** → A 레코드의 IP를 새 IP로 변경
 
 ## 인프라 구성
 
 | 컴포넌트 | 역할 |
 |---------|------|
-| EC2 + Docker | Spring Boot 애플리케이션 컨테이너 |
+| EC2 + Docker | Spring Boot 애플리케이션 컨테이너 (IP 유동적) |
 | MySQL 8.0 | Docker Compose로 실행되는 데이터베이스 |
 | Nginx | 리버스 프록시 + Blue-Green 트래픽 전환 |
 | AWS S3 | 이미지 저장소 (Presigned URL 업로드) |
-| Cloudflare CDN | 이미지 서빙, CDN 캐싱 |
+| Cloudflare | CDN 캐싱 + DNS 관리 (A 레코드 → EC2 IP) |
 | GitHub Actions | CI/CD 자동화 (main 머지 시 트리거) |
 | Prometheus + Grafana | 애플리케이션 모니터링 |
 
