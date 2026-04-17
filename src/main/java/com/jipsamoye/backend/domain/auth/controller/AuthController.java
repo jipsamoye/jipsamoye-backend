@@ -2,13 +2,14 @@ package com.jipsamoye.backend.domain.auth.controller;
 
 import com.jipsamoye.backend.domain.auth.service.AuthService;
 import com.jipsamoye.backend.domain.user.dto.response.UserResponse;
+import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Auth", description = "인증 API")
@@ -29,9 +30,8 @@ public class AuthController {
     @Operation(summary = "현재 로그인 유저 정보", description = "세션에 저장된 유저 정보를 반환합니다.")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> getMe(
-            @Parameter(description = "유저 ID (인증 구현 전 임시)") @RequestParam Long userId) {
-        // TODO: 인증 구현 후 세션에서 userId 추출로 변경
-        UserResponse response = authService.getMe(userId);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        UserResponse response = authService.getMe(userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
@@ -45,9 +45,8 @@ public class AuthController {
     @Operation(summary = "회원 탈퇴", description = "유저 계정 및 관련 데이터를 모두 삭제합니다.")
     @DeleteMapping("/withdraw")
     public ResponseEntity<ApiResponse<Void>> withdraw(
-            @Parameter(description = "유저 ID (인증 구현 전 임시)") @RequestParam Long userId) {
-        // TODO: 인증 구현 후 세션에서 userId 추출로 변경
-        authService.withdraw(userId);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        authService.withdraw(userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("회원 탈퇴 성공"));
     }
 }

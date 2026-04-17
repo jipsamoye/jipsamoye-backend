@@ -1,5 +1,6 @@
 package com.jipsamoye.backend.global.config;
 
+import com.jipsamoye.backend.global.config.security.CustomAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,6 +12,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -20,9 +24,26 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // 초기 개발 단계: 전체 permitAll (인증 구현 후 인가 규칙 적용 예정)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
+                )
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        // 인증 불필요 — 조회 API
+                        .requestMatchers(GET, "/api/posts/**").permitAll()
+                        .requestMatchers(GET, "/api/users/**").permitAll()
+                        .requestMatchers(GET, "/api/search").permitAll()
+
+                        // 인증 불필요 — 게스트 로그인
+                        .requestMatchers(POST, "/api/auth/guest").permitAll()
+
+                        // 인증 불필요 — Swagger, 헬스체크, WebSocket
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // 그 외 모든 요청은 인증 필수
+                        .anyRequest().authenticated()
                 );
 
         return http.build();

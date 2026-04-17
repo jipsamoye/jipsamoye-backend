@@ -10,9 +10,14 @@ import com.jipsamoye.backend.domain.user.entity.Role;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
+import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +50,19 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         User saved = userRepository.save(guest);
-        httpSession.setAttribute("userId", saved.getId());
+
+        // Spring Security SecurityContext에 인증 정보 저장
+        CustomUserDetails userDetails = new CustomUserDetails(saved.getId(), saved.getRole());
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+
+        // 세션에 SecurityContext 저장 (다음 요청에서 자동 복원)
+        httpSession.setAttribute(
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
 
         return UserResponse.of(saved, 0, 0, 0);
     }
@@ -64,6 +81,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void logout() {
+        SecurityContextHolder.clearContext();
         httpSession.invalidate();
     }
 
@@ -73,14 +91,14 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        // Like hard delete → Follow hard delete → Comment soft delete → PetPost soft delete → User soft delete
         likeRepository.deleteAllByUser(user);
         followRepository.deleteAllByUser(user);
         commentRepository.softDeleteAllByUser(user);
         petPostRepository.softDeleteAllByUser(user);
-        // TODO: S3 이미지 삭제 추가
 
         user.softDelete();
+
+        SecurityContextHolder.clearContext();
         httpSession.invalidate();
     }
 }
