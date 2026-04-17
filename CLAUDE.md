@@ -27,6 +27,15 @@
 - 기능 구현 시 더 나은 방법이 있으면 먼저 제안하고 확인받기
 - 대화는 한국어로
 
+## 새 도메인 추가 체크리스트
+1. `domain/{도메인}/` 하위에 controller/, service/, repository/, entity/, dto/request/, dto/response/ 생성
+2. Service는 인터페이스 + Impl 패턴 (상세: [코드 컨벤션](docs/CONVENTIONS.md))
+3. Controller는 @RestController + ResponseEntity<ApiResponse<T>> 반환
+4. Entity는 BaseEntity 상속, @Setter 금지
+5. 테스트 코드 작성 후 `./gradlew test` 통과 확인
+6. `docs/ARCHITECTURE.md` 도메인 맵 테이블에 새 도메인 추가
+7. `docs/QUALITY.md` 품질 등급 테이블에 새 도메인 추가
+
 ## 상세 문서 (필요 시 참조)
 - [아키텍처](docs/ARCHITECTURE.md) — 시스템 구조, 도메인 맵, 레이어 규칙, 패키지 구조
 - [코드 컨벤션](docs/CONVENTIONS.md) — @Setter 금지, ApiResponse 래퍼, DTO 위치, Service 패턴

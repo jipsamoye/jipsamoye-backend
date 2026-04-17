@@ -25,3 +25,6 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build -x test
+
+      - name: Run ArchUnit Architecture Tests
+        run: ./gradlew test --tests "com.jipsamoye.backend.global.architecture.ArchitectureTest"
