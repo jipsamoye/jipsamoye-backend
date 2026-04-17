@@ -84,10 +84,10 @@ class ChatServiceImplTest {
 
         ChatMessagesResponse response = chatService.getMessages(30, null);
 
-        assertThat(response.getMessages()).hasSize(2);
-        assertThat(response.getMessages().get(0).getContent()).isEqualTo("첫 번째");
-        assertThat(response.getMessages().get(1).getContent()).isEqualTo("두 번째");
-        assertThat(response.isHasMore()).isFalse();
+        assertThat(response.messages()).hasSize(2);
+        assertThat(response.messages().get(0).content()).isEqualTo("첫 번째");
+        assertThat(response.messages().get(1).content()).isEqualTo("두 번째");
+        assertThat(response.hasMore()).isFalse();
     }
 
     @Test
@@ -108,9 +108,9 @@ class ChatServiceImplTest {
 
         ChatMessagesResponse response = chatService.getMessages(30, 10L);
 
-        assertThat(response.getMessages()).hasSize(1);
-        assertThat(response.getMessages().get(0).getContent()).isEqualTo("이전 메시지");
-        assertThat(response.isHasMore()).isFalse();
+        assertThat(response.messages()).hasSize(1);
+        assertThat(response.messages().get(0).content()).isEqualTo("이전 메시지");
+        assertThat(response.hasMore()).isFalse();
     }
 
     @Test
@@ -136,7 +136,7 @@ class ChatServiceImplTest {
 
         ChatMessagesResponse response = chatService.getMessages(2, null);
 
-        assertThat(response.getMessages()).hasSize(2);
-        assertThat(response.isHasMore()).isTrue();
+        assertThat(response.messages()).hasSize(2);
+        assertThat(response.hasMore()).isTrue();
     }
 }

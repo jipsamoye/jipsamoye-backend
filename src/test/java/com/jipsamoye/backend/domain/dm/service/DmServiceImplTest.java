@@ -55,8 +55,8 @@ class DmServiceImplTest {
 
         DmRoomResponse response = dmService.createRoom(1L, 2L);
 
-        assertThat(response.getRoomId()).isEqualTo(1L);
-        assertThat(response.getOtherUserNickname()).isEqualTo("냥집사");
+        assertThat(response.roomId()).isEqualTo(1L);
+        assertThat(response.otherUserNickname()).isEqualTo("냥집사");
     }
 
     @Test
@@ -86,7 +86,7 @@ class DmServiceImplTest {
 
         DmRoomResponse response = dmService.createRoom(1L, 2L);
 
-        assertThat(response.getRoomId()).isEqualTo(5L);
+        assertThat(response.roomId()).isEqualTo(5L);
         verify(dmRoomRepository, never()).save(any(DmRoom.class));
     }
 
