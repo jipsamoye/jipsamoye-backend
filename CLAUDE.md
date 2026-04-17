@@ -32,8 +32,7 @@
 - [코드 컨벤션](docs/CONVENTIONS.md) — @Setter 금지, ApiResponse 래퍼, DTO 위치, Service 패턴
 - [배포 & 운영](docs/DEPLOYMENT.md) — 배포 프로세스, 서버 정보, Discord 알림 형식
 - [품질 현황](docs/QUALITY.md) — 도메인별 품질 등급, 알려진 기술 부채
-- [PRD](docs/PRD.md) — 제품 요구사항
-- [TRD](docs/TRD.md) — 기술 요구사항
+- [PRD](docs/PRD.md) — 제품 요구사항 (서비스 개요, 기능 정의, 로드맵)
 
 ## PR 템플릿
 ```
