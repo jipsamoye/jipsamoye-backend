@@ -101,6 +101,7 @@ src/main/java/com/jipsamoye/
     ├── exception/                 # GlobalExceptionHandler, 커스텀 예외
     ├── scheduler/                 # 스케줄러
     ├── logging/                   # Discord 에러 알림 등 로깅
+    ├── dummy/                     # 개발용 더미 데이터 생성 (운영 배포 전 제거)
     └── util/                      # 유틸리티
 ```
 
