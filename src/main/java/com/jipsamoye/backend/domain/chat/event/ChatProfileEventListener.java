@@ -19,7 +19,6 @@ public class ChatProfileEventListener {
     public void handleProfileUpdate(ProfileUpdatedEvent event) {
         messagingTemplate.convertAndSend("/sub/chat/room", Map.of(
                 "type", "PROFILE_UPDATED",
-                "userId", event.getUserId(),
                 "nickname", event.getNickname(),
                 "profileImageUrl", event.getProfileImageUrl() != null ? event.getProfileImageUrl() : ""
         ));
