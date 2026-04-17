@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.global.config;
 
 import com.jipsamoye.backend.global.config.security.WebSocketAuthInterceptor;
+import com.jipsamoye.backend.global.config.security.WebSocketPrincipalHandshakeHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -15,6 +16,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/sub");
         config.setApplicationDestinationPrefixes("/pub");
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override
@@ -27,6 +29,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         "http://localhost:3000"
                 )
                 .addInterceptors(new WebSocketAuthInterceptor())
+                .setHandshakeHandler(new WebSocketPrincipalHandshakeHandler())
                 .withSockJS();
     }
 }
