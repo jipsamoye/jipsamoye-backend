@@ -133,3 +133,22 @@ src/main/java/com/jipsamoye/
 |------|------|
 | `user` ↔ `follow` | UserService가 FollowRepository 참조, FollowService가 UserRepository 참조 |
 | `user` ↔ `petPost` | UserService가 PetPostRepository 참조, PetPostService가 UserRepository 참조 |
+
+---
+
+## 아키텍처 테스트 (ArchUnit)
+
+위 레이어 규칙과 컨벤션은 ArchUnit 테스트로 기계적으로 강제된다.
+테스트 위치: `src/test/java/com/jipsamoye/backend/global/architecture/ArchitectureTest.java`
+
+**강제되는 규칙:**
+1. Controller → Repository 직접 접근 금지
+2. Service → Controller 역방향 참조 금지
+3. Repository → Controller 역방향 참조 금지
+4. Entity → Service/Controller 참조 금지
+5. 도메인 간 순환 참조 금지 (현재 @Disabled — 기술 부채)
+6. 엔티티 @Setter 금지
+7. Controller 클래스 @RestController/@Controller 어노테이션 필수
+8. DTO는 dto/request/ 또는 dto/response/에 위치
+
+**규칙 위반 시:** `./gradlew test`에서 실패하며, 에러 메시지에 수정 방법이 포함되어 있다.
