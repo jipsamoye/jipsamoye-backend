@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 public record ChatMessageResponse(
         String type,
         Long id,
-        String nickname,
-        String profileImageUrl,
+        String senderNickname,
+        String senderProfileImageUrl,
         String content,
         LocalDateTime createdAt
 ) {
