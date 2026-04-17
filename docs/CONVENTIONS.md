@@ -76,6 +76,41 @@ public boolean isDeleted() {
 }
 ```
 
+### 정적 팩토리 메서드
+
+public 생성자 대신 `create()` 정적 팩토리 메서드를 사용한다. 생성 시 초기 상태 설정과 비즈니스 검증을 포함할 수 있다.
+
+```java
+@NoArgsConstructor(access = AccessLevel.PROTECTED)  // JPA용 기본 생성자
+public class Follow extends BaseEntity {
+
+    public static Follow create(User follower, User following) {
+        Follow follow = new Follow();
+        follow.follower = follower;
+        follow.following = following;
+        return follow;
+    }
+}
+```
+
+### equals / hashCode
+
+엔티티의 equals/hashCode는 **id 기반으로만** 비교한다. Lombok의 `@EqualsAndHashCode`는 모든 필드를 비교하므로 사용 금지.
+
+```java
+@Override
+public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Follow follow)) return false;
+    return id != null && id.equals(follow.getId());
+}
+
+@Override
+public int hashCode() {
+    return Objects.hash(id);
+}
+```
+
 ### BaseEntity 상속
 
 모든 엔티티는 `global.entity.BaseEntity`를 상속합니다.  
@@ -237,7 +272,79 @@ if (!request.getNickname().equals(user.getNickname())) {
 
 ---
 
-## 7. WebSocket Controller
+## 7. 테스트 작성 규칙
+
+### 메서드명과 구조
+
+- `@DisplayName`은 한글로 작성한다.
+- **Given-When-Then** 패턴을 따른다.
+- `@Nested`로 메서드별 테스트를 그룹화한다.
+
+```java
+@ExtendWith(MockitoExtension.class)
+@DisplayName("UserService 단위 테스트")
+class UserServiceImplTest {
+
+    @Nested
+    @DisplayName("updateProfile 메서드")
+    class UpdateProfileTest {
+
+        @Test
+        @DisplayName("유효한 요청이면 프로필을 수정한다")
+        void updateProfile_validRequest_updatesProfile() {
+            // Given
+            User user = UserFixture.defaultUser();
+            given(userRepository.findById(1L)).willReturn(Optional.of(user));
+
+            // When
+            userService.updateProfile(1L, new UserUpdateRequest("새닉네임", null));
+
+            // Then
+            assertThat(user.getNickname()).isEqualTo("새닉네임");
+        }
+    }
+}
+```
+
+### 테스트 픽스처 팩토리
+
+테스트에서 반복되는 객체 생성은 `{도메인}Fixture` 클래스로 분리한다. 테스트 코드의 가독성과 재사용성이 높아진다.
+
+```java
+// src/test/java/.../domain/user/UserFixture.java
+public class UserFixture {
+
+    public static User defaultUser() {
+        return User.create("test@example.com", "테스트유저", Provider.KAKAO, "kakao123");
+    }
+
+    public static UserUpdateRequest updateRequest() {
+        return new UserUpdateRequest("새닉네임", "새소개글");
+    }
+}
+```
+
+---
+
+## 8. 로깅 규칙
+
+### 로그 레벨 기준
+
+| 레벨 | 용도 | 예시 |
+|------|------|------|
+| ERROR | 시스템이 의도대로 동작하지 않음 (Discord 알림 트리거) | DB 연결 실패, 외부 API 장애 |
+| WARN | 비즈니스 예외, 재시도 가능한 실패 | 중복 닉네임, 권한 없는 접근 시도 |
+| INFO | 주요 비즈니스 이벤트 | 회원 가입, 게시글 생성, 배포 완료 |
+| DEBUG | 개발 중 디버깅용 (운영에서는 OFF) | 쿼리 파라미터, 중간 계산 결과 |
+
+### 금지 사항
+
+- `System.out.println` 절대 금지. 반드시 `log.info/warn/error` 사용.
+- 민감 정보(비밀번호, 토큰, 개인정보) 로깅 금지.
+
+---
+
+## 9. WebSocket Controller
 
 `@MessageMapping`을 사용하는 WebSocket Controller는 `void` 반환을 허용합니다.  
 REST Controller의 `ResponseEntity<ApiResponse<T>>` 규칙과는 별개입니다.
