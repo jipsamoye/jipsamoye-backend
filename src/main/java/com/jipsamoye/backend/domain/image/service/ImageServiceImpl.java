@@ -44,13 +44,13 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     public PresignedUrlResponse generatePresignedUrl(PresignedUrlRequest request, Long userId) {
-        String ext = request.getExt().toLowerCase();
+        String ext = request.ext().toLowerCase();
 
         if (!ALLOWED_EXTENSIONS.contains(ext)) {
             throw new BusinessException(ErrorCode.INVALID_FILE, "허용된 이미지 형식: jpg, png, webp");
         }
 
-        String dirName = request.getDirName();
+        String dirName = request.dirName();
         if (!dirName.equals("posts") && !dirName.equals("profiles") && !dirName.equals("covers") && !dirName.equals("dm")) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "dirName은 posts, profiles, covers, dm만 가능합니다.");
         }
@@ -79,10 +79,7 @@ public class ImageServiceImpl implements ImageService {
 
         String imageUrl = cdnBaseUrl + "/" + key;
 
-        return PresignedUrlResponse.builder()
-                .presignedUrl(presignedRequest.url().toString())
-                .imageUrl(imageUrl)
-                .build();
+        return new PresignedUrlResponse(presignedRequest.url().toString(), imageUrl);
     }
 
     @Override

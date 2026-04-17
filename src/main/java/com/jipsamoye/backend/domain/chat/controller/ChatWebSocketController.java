@@ -17,7 +17,7 @@ public class ChatWebSocketController {
 
     @MessageMapping("/chat/send")
     public void sendMessage(ChatSendRequest request) {
-        ChatMessageResponse response = chatService.sendMessage(request.getUserId(), request.getContent());
+        ChatMessageResponse response = chatService.sendMessage(request.userId(), request.content());
         messagingTemplate.convertAndSend("/sub/chat/room", response);
     }
 

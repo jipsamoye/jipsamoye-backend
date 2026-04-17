@@ -212,8 +212,18 @@ public class UserServiceImpl implements UserService {
 
 ## 4. DTO 규칙
 
-DTO는 반드시 `dto/request/` 또는 `dto/response/` 하위에 위치합니다.  
-`dto/` 바로 아래에 두지 않습니다.
+### Java Record 사용 (필수)
+
+모든 DTO는 **Java Record**로 작성한다. Lombok 클래스(`@Getter`, `@NoArgsConstructor`)를 사용하지 않는다.
+
+- 불변 보장 (필드가 자동으로 `final`)
+- 보일러플레이트 제거 (getter, equals, hashCode, toString 자동 생성)
+- Record의 접근자는 `getXxx()`가 아니라 `xxx()` 형태
+
+### 패키지 위치
+
+DTO는 반드시 `dto/request/` 또는 `dto/response/` 하위에 위치한다.
+`dto/` 바로 아래에 두지 않는다.
 
 ```
 domain/user/dto/
@@ -223,8 +233,48 @@ domain/user/dto/
       └── UserResponse.java
 ```
 
-- Request DTO: `@Valid`, `@NotBlank` 등 검증 어노테이션 사용
-- Response DTO: 정적 팩토리 메서드 `from(Entity entity)` 패턴 권장
+### Request DTO
+
+`@Valid` + Bean Validation 어노테이션을 record 파라미터에 직접 선언한다.
+
+```java
+@Schema(description = "게시글 작성 요청")
+public record PetPostCreateRequest(
+        @NotBlank(message = "제목을 입력해주세요.")
+        @Size(max = 100, message = "제목은 100자 이하로 입력해주세요.")
+        @Schema(description = "게시글 제목") String title,
+
+        @Size(max = 5000, message = "내용은 5000자 이하로 입력해주세요.")
+        @Schema(description = "게시글 내용") String content,
+
+        @NotEmpty(message = "이미지를 1장 이상 업로드해주세요.")
+        @Size(max = 5, message = "이미지는 최대 5장까지 업로드할 수 있습니다.")
+        @Schema(description = "이미지 URL 목록") List<String> imageUrls
+) {}
+```
+
+### Response DTO
+
+정적 팩토리 메서드 `from(Entity)`를 record 내부에 선언한다.
+
+```java
+@Schema(description = "댓글 응답")
+public record CommentResponse(
+        @Schema(description = "댓글 ID") Long id,
+        @Schema(description = "작성자 닉네임") String nickname,
+        @Schema(description = "댓글 내용") String content,
+        @Schema(description = "작성일시") LocalDateTime createdAt
+) {
+    public static CommentResponse from(Comment comment) {
+        return new CommentResponse(
+                comment.getId(),
+                comment.getUser().getNickname(),
+                comment.getContent(),
+                comment.getCreatedAt()
+        );
+    }
+}
+```
 
 ---
 

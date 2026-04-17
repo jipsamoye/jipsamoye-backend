@@ -38,7 +38,7 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = Comment.builder()
                 .petPost(petPost)
                 .user(user)
-                .content(request.getContent())
+                .content(request.content())
                 .build();
 
         Comment saved = commentRepository.save(comment);
@@ -66,7 +66,7 @@ public class CommentServiceImpl implements CommentService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        comment.updateContent(request.getContent());
+        comment.updateContent(request.content());
         return CommentResponse.from(comment);
     }
 

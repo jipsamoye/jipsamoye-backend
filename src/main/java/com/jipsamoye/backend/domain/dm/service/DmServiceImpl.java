@@ -39,15 +39,15 @@ public class DmServiceImpl implements DmService {
                     var lastMsg = dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(room);
                     long unread = dmMessageRepository.countUnread(room, user);
 
-                    return DmRoomResponse.builder()
-                            .roomId(room.getId())
-                            .otherUserId(other.getId())
-                            .otherUserNickname(other.getNickname())
-                            .otherUserProfileImageUrl(other.getProfileImageUrl())
-                            .lastMessage(lastMsg.map(DmMessage::getContent).orElse(null))
-                            .lastMessageAt(lastMsg.map(DmMessage::getCreatedAt).orElse(null))
-                            .unreadCount(unread)
-                            .build();
+                    return new DmRoomResponse(
+                            room.getId(),
+                            other.getId(),
+                            other.getNickname(),
+                            other.getProfileImageUrl(),
+                            lastMsg.map(DmMessage::getContent).orElse(null),
+                            lastMsg.map(DmMessage::getCreatedAt).orElse(null),
+                            unread
+                    );
                 })
                 .toList();
     }
@@ -70,13 +70,15 @@ public class DmServiceImpl implements DmService {
                         .user2(target)
                         .build()));
 
-        return DmRoomResponse.builder()
-                .roomId(room.getId())
-                .otherUserId(target.getId())
-                .otherUserNickname(target.getNickname())
-                .otherUserProfileImageUrl(target.getProfileImageUrl())
-                .unreadCount(0)
-                .build();
+        return new DmRoomResponse(
+                room.getId(),
+                target.getId(),
+                target.getNickname(),
+                target.getProfileImageUrl(),
+                null,
+                null,
+                0
+        );
     }
 
     @Override

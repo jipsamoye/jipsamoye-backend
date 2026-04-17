@@ -18,9 +18,9 @@ public class DmWebSocketController {
     @MessageMapping("/dm/send")
     public void sendMessage(DmSendRequest request) {
         DmMessageResponse response = dmService.sendMessage(
-                request.getUserId(), request.getRoomId(),
-                request.getContent(), request.getImageUrl());
+                request.userId(), request.roomId(),
+                request.content(), request.imageUrl());
 
-        messagingTemplate.convertAndSend("/sub/dm/room/" + request.getRoomId(), response);
+        messagingTemplate.convertAndSend("/sub/dm/room/" + request.roomId(), response);
     }
 }

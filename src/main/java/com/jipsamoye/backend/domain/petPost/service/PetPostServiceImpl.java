@@ -41,9 +41,9 @@ public class PetPostServiceImpl implements PetPostService {
 
         PetPost petPost = PetPost.builder()
                 .user(user)
-                .title(request.getTitle())
-                .content(request.getContent())
-                .imageUrls(request.getImageUrls())
+                .title(request.title())
+                .content(request.content())
+                .imageUrls(request.imageUrls())
                 .build();
 
         PetPost saved = petPostRepository.save(petPost);
@@ -76,14 +76,14 @@ public class PetPostServiceImpl implements PetPostService {
         }
 
         // 수정 시 빠진 이미지 S3 삭제
-        if (request.getImageUrls() != null) {
+        if (request.imageUrls() != null) {
             java.util.List<String> removedUrls = petPost.getImageUrls().stream()
-                    .filter(url -> !request.getImageUrls().contains(url))
+                    .filter(url -> !request.imageUrls().contains(url))
                     .toList();
             imageService.deleteImages(removedUrls);
         }
 
-        petPost.update(request.getTitle(), request.getContent(), request.getImageUrls());
+        petPost.update(request.title(), request.content(), request.imageUrls());
         return PetPostResponse.from(petPost);
     }
 
