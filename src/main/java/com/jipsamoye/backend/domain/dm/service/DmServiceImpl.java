@@ -41,7 +41,6 @@ public class DmServiceImpl implements DmService {
 
                     return new DmRoomResponse(
                             room.getId(),
-                            other.getId(),
                             other.getNickname(),
                             other.getProfileImageUrl(),
                             lastMsg.map(DmMessage::getContent).orElse(null),
@@ -54,13 +53,13 @@ public class DmServiceImpl implements DmService {
 
     @Override
     @Transactional
-    public DmRoomResponse createRoom(Long userId, Long targetUserId) {
+    public DmRoomResponse createRoom(Long userId, String targetNickname) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        User target = userRepository.findById(targetUserId)
+        User target = userRepository.findByNickname(targetNickname)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (userId.equals(targetUserId)) {
+        if (user.getId().equals(target.getId())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "자기 자신에게 DM을 보낼 수 없습니다.");
         }
 
@@ -72,7 +71,6 @@ public class DmServiceImpl implements DmService {
 
         return new DmRoomResponse(
                 room.getId(),
-                target.getId(),
                 target.getNickname(),
                 target.getProfileImageUrl(),
                 null,

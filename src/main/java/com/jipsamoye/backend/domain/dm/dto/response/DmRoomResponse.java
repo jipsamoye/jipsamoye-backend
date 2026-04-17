@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 public record DmRoomResponse(
         Long roomId,
-        Long otherUserId,
         String otherUserNickname,
         String otherUserProfileImageUrl,
         String lastMessage,

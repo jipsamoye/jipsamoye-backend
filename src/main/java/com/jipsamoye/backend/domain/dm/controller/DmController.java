@@ -35,9 +35,9 @@ public class DmController {
     @PostMapping("/rooms")
     public ResponseEntity<ApiResponse<DmRoomResponse>> createRoom(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam Long targetUserId) {
+            @RequestParam String targetNickname) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created(dmService.createRoom(userDetails.getUserId(), targetUserId)));
+                .body(ApiResponse.created(dmService.createRoom(userDetails.getUserId(), targetNickname)));
     }
 
     @Operation(summary = "메시지 목록 조회")
