@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record UserResponse(
-        Long id,
         String nickname,
         String bio,
         String profileImageUrl,
@@ -20,7 +19,6 @@ public record UserResponse(
 ) {
     public static UserResponse of(User user, long postCount, long followerCount, long followingCount) {
         return new UserResponse(
-                user.getId(),
                 user.getNickname(),
                 user.getBio(),
                 user.getProfileImageUrl(),

@@ -9,7 +9,6 @@ public record PetPostListResponse(
         String title,
         String thumbnailUrl,
         int likeCount,
-        Long userId,
         String nickname,
         LocalDateTime createdAt
 ) {
@@ -21,7 +20,6 @@ public record PetPostListResponse(
                 petPost.getTitle(),
                 petPost.getImageUrls().isEmpty() ? null : petPost.getImageUrls().get(0),
                 petPost.getLikeCount(),
-                petPost.getUser().getId(),
                 isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname(),
                 petPost.getCreatedAt()
         );

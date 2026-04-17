@@ -64,7 +64,6 @@ class ChatServiceImplTest {
     @DisplayName("최신 메시지 조회 - beforeId 없으면 최신 메시지")
     void getMessages_latest() {
         User sender = mock(User.class);
-        when(sender.getId()).thenReturn(1L);
         when(sender.getNickname()).thenReturn("멍집사");
 
         ChatMessage msg1 = mock(ChatMessage.class);
@@ -94,7 +93,6 @@ class ChatServiceImplTest {
     @DisplayName("이전 메시지 조회 - beforeId로 커서 페이지네이션")
     void getMessages_beforeId() {
         User sender = mock(User.class);
-        when(sender.getId()).thenReturn(1L);
         when(sender.getNickname()).thenReturn("멍집사");
 
         ChatMessage msg = mock(ChatMessage.class);
@@ -117,7 +115,6 @@ class ChatServiceImplTest {
     @DisplayName("hasMore - 더 불러올 메시지가 있으면 true")
     void getMessages_hasMore() {
         User sender = mock(User.class);
-        when(sender.getId()).thenReturn(1L);
         when(sender.getNickname()).thenReturn("멍집사");
 
         // size=2로 요청하면 3개를 조회 → 3개가 오면 hasMore=true

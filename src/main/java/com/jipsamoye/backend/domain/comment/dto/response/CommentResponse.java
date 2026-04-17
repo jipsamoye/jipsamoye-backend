@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 public record CommentResponse(
         Long id,
         String content,
-        Long userId,
         String nickname,
         String profileImageUrl,
         LocalDateTime createdAt,
@@ -19,7 +18,6 @@ public record CommentResponse(
         return new CommentResponse(
                 comment.getId(),
                 comment.getContent(),
-                comment.getUser().getId(),
                 isUserDeleted ? "탈퇴한 사용자" : comment.getUser().getNickname(),
                 isUserDeleted ? null : comment.getUser().getProfileImageUrl(),
                 comment.getCreatedAt(),
