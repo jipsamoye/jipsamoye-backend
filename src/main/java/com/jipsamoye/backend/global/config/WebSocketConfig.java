@@ -20,7 +20,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(
+                        "https://jipsamoye.com",
+                        "https://www.jipsamoye.com",
+                        "https://jipsamoyefrontend.vercel.app",
+                        "http://localhost:3000"
+                )
                 .addInterceptors(new WebSocketAuthInterceptor())
                 .withSockJS();
     }
