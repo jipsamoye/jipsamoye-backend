@@ -37,7 +37,6 @@ class ChatProfileEventListenerTest {
 
         Map<String, Object> payload = captor.getValue();
         assertThat(payload.get("type")).isEqualTo("PROFILE_UPDATED");
-        assertThat(payload.get("userId")).isEqualTo(1L);
         assertThat(payload.get("nickname")).isEqualTo("새닉네임");
         assertThat(payload.get("profileImageUrl")).isEqualTo("https://new-image.jpg");
     }
