@@ -3,13 +3,14 @@ package com.jipsamoye.backend.domain.image.controller;
 import com.jipsamoye.backend.domain.image.dto.request.PresignedUrlRequest;
 import com.jipsamoye.backend.domain.image.dto.response.PresignedUrlResponse;
 import com.jipsamoye.backend.domain.image.service.ImageService;
+import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Image", description = "이미지 API")
@@ -24,8 +25,8 @@ public class ImageController {
     @PostMapping("/presigned-url")
     public ResponseEntity<ApiResponse<PresignedUrlResponse>> generatePresignedUrl(
             @Valid @RequestBody PresignedUrlRequest request,
-            @Parameter(description = "유저 ID (인증 구현 전 임시)") @RequestParam Long userId) {
-        PresignedUrlResponse response = imageService.generatePresignedUrl(request, userId);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        PresignedUrlResponse response = imageService.generatePresignedUrl(request, userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

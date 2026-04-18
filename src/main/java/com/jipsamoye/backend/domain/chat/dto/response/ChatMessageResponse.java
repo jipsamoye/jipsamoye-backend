@@ -1,32 +1,25 @@
 package com.jipsamoye.backend.domain.chat.dto.response;
 
 import com.jipsamoye.backend.domain.chat.entity.ChatMessage;
-import lombok.Builder;
-import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Builder
-public class ChatMessageResponse {
-
-    private String type;
-    private Long id;
-    private Long userId;
-    private String nickname;
-    private String profileImageUrl;
-    private String content;
-    private LocalDateTime createdAt;
-
+public record ChatMessageResponse(
+        String type,
+        Long id,
+        String senderNickname,
+        String senderProfileImageUrl,
+        String content,
+        LocalDateTime createdAt
+) {
     public static ChatMessageResponse from(ChatMessage message) {
-        return ChatMessageResponse.builder()
-                .type("CHAT_MESSAGE")
-                .id(message.getId())
-                .userId(message.getSender().getId())
-                .nickname(message.getSender().getNickname())
-                .profileImageUrl(message.getSender().getProfileImageUrl())
-                .content(message.getContent())
-                .createdAt(message.getCreatedAt())
-                .build();
+        return new ChatMessageResponse(
+                "CHAT_MESSAGE",
+                message.getId(),
+                message.getSender().getNickname(),
+                message.getSender().getProfileImageUrl(),
+                message.getContent(),
+                message.getCreatedAt()
+        );
     }
 }

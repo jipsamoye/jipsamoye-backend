@@ -44,10 +44,7 @@ public class ChatServiceImpl implements ChatService {
                 .toList());
         Collections.reverse(messages);
 
-        return ChatMessagesResponse.builder()
-                .messages(messages)
-                .hasMore(hasMore)
-                .build();
+        return new ChatMessagesResponse(messages, hasMore);
     }
 
     @Override

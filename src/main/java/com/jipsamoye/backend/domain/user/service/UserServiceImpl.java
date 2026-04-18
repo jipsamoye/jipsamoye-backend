@@ -50,14 +50,14 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
-            if (userRepository.existsByNickname(request.getNickname())) {
+        if (request.nickname() != null && !request.nickname().equals(user.getNickname())) {
+            if (userRepository.existsByNickname(request.nickname())) {
                 throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
             }
         }
 
-        user.updateProfile(request.getNickname(), request.getBio(), request.getProfileImageUrl(),
-                request.getCoverImageUrl(), request.getSocialLinks());
+        user.updateProfile(request.nickname(), request.bio(), request.profileImageUrl(),
+                request.coverImageUrl(), request.socialLinks());
 
         eventPublisher.publishEvent(new ProfileUpdatedEvent(
                 user.getId(), user.getNickname(), user.getProfileImageUrl()));

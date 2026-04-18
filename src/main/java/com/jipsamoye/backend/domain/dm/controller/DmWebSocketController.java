@@ -5,6 +5,7 @@ import com.jipsamoye.backend.domain.dm.dto.response.DmMessageResponse;
 import com.jipsamoye.backend.domain.dm.service.DmService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -16,11 +17,12 @@ public class DmWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/dm/send")
-    public void sendMessage(DmSendRequest request) {
+    public void sendMessage(DmSendRequest request, SimpMessageHeaderAccessor headerAccessor) {
+        Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
         DmMessageResponse response = dmService.sendMessage(
-                request.getUserId(), request.getRoomId(),
-                request.getContent(), request.getImageUrl());
+                userId, request.roomId(),
+                request.content(), request.imageUrl());
 
-        messagingTemplate.convertAndSend("/sub/dm/room/" + request.getRoomId(), response);
+        messagingTemplate.convertAndSend("/sub/dm/room/" + request.roomId(), response);
     }
 }

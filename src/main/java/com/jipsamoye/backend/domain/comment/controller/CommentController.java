@@ -4,6 +4,7 @@ import com.jipsamoye.backend.domain.comment.dto.request.CommentCreateRequest;
 import com.jipsamoye.backend.domain.comment.dto.request.CommentUpdateRequest;
 import com.jipsamoye.backend.domain.comment.dto.response.CommentResponse;
 import com.jipsamoye.backend.domain.comment.service.CommentService;
+import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Comment", description = "댓글 API")
@@ -27,8 +29,8 @@ public class CommentController {
     public ResponseEntity<ApiResponse<CommentResponse>> createComment(
             @Parameter(description = "게시글 ID") @PathVariable Long postId,
             @Valid @RequestBody CommentCreateRequest request,
-            @Parameter(description = "작성자 ID (인증 구현 전 임시)") @RequestParam Long userId) {
-        CommentResponse response = commentService.createComment(postId, request, userId);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        CommentResponse response = commentService.createComment(postId, request, userDetails.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(response));
     }
 
@@ -47,8 +49,8 @@ public class CommentController {
     public ResponseEntity<ApiResponse<CommentResponse>> updateComment(
             @Parameter(description = "댓글 ID") @PathVariable Long id,
             @Valid @RequestBody CommentUpdateRequest request,
-            @Parameter(description = "작성자 ID (인증 구현 전 임시)") @RequestParam Long userId) {
-        CommentResponse response = commentService.updateComment(id, request, userId);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        CommentResponse response = commentService.updateComment(id, request, userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("댓글 수정 성공", response));
     }
 
@@ -56,8 +58,8 @@ public class CommentController {
     @DeleteMapping("/api/comments/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteComment(
             @Parameter(description = "댓글 ID") @PathVariable Long id,
-            @Parameter(description = "작성자 ID (인증 구현 전 임시)") @RequestParam Long userId) {
-        commentService.deleteComment(id, userId);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        commentService.deleteComment(id, userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("댓글 삭제 성공"));
     }
 }

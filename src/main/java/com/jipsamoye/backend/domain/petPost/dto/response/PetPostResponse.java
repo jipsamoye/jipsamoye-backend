@@ -1,41 +1,34 @@
 package com.jipsamoye.backend.domain.petPost.dto.response;
 
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
-import lombok.Builder;
-import lombok.Getter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter
-@Builder
-public class PetPostResponse {
-
-    private Long id;
-    private String title;
-    private String content;
-    private List<String> imageUrls;
-    private int likeCount;
-    private Long userId;
-    private String nickname;
-    private String profileImageUrl;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
+public record PetPostResponse(
+        Long id,
+        String title,
+        String content,
+        List<String> imageUrls,
+        int likeCount,
+        String nickname,
+        String profileImageUrl,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
     // 탈퇴한 유저의 게시글은 "탈퇴한 사용자"로 표시
     public static PetPostResponse from(PetPost petPost) {
         boolean isUserDeleted = petPost.getUser().isDeleted();
-        return PetPostResponse.builder()
-                .id(petPost.getId())
-                .title(petPost.getTitle())
-                .content(petPost.getContent())
-                .imageUrls(petPost.getImageUrls())
-                .likeCount(petPost.getLikeCount())
-                .userId(petPost.getUser().getId())
-                .nickname(isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname())
-                .profileImageUrl(isUserDeleted ? null : petPost.getUser().getProfileImageUrl())
-                .createdAt(petPost.getCreatedAt())
-                .updatedAt(petPost.getUpdatedAt())
-                .build();
+        return new PetPostResponse(
+                petPost.getId(),
+                petPost.getTitle(),
+                petPost.getContent(),
+                petPost.getImageUrls(),
+                petPost.getLikeCount(),
+                isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname(),
+                isUserDeleted ? null : petPost.getUser().getProfileImageUrl(),
+                petPost.getCreatedAt(),
+                petPost.getUpdatedAt()
+        );
     }
 }

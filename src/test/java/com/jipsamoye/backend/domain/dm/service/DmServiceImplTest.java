@@ -46,26 +46,29 @@ class DmServiceImplTest {
         lenient().when(target.getId()).thenReturn(2L);
         when(target.getNickname()).thenReturn("냥집사");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(target));
+        when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
         when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
 
         DmRoom savedRoom = mock(DmRoom.class);
         when(savedRoom.getId()).thenReturn(1L);
         when(dmRoomRepository.save(any(DmRoom.class))).thenReturn(savedRoom);
 
-        DmRoomResponse response = dmService.createRoom(1L, 2L);
+        DmRoomResponse response = dmService.createRoom(1L, "냥집사");
 
-        assertThat(response.getRoomId()).isEqualTo(1L);
-        assertThat(response.getOtherUserNickname()).isEqualTo("냥집사");
+        assertThat(response.roomId()).isEqualTo(1L);
+        assertThat(response.otherUserNickname()).isEqualTo("냥집사");
     }
 
     @Test
     @DisplayName("채팅방 생성 - 자기 자신에게 DM 불가")
     void createRoom_selfDm() {
         User user = mock(User.class);
+        lenient().when(user.getId()).thenReturn(1L);
+        lenient().when(user.getNickname()).thenReturn("멍집사");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByNickname("멍집사")).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> dmService.createRoom(1L, 1L))
+        assertThatThrownBy(() -> dmService.createRoom(1L, "멍집사"))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -78,15 +81,15 @@ class DmServiceImplTest {
         lenient().when(target.getId()).thenReturn(2L);
         when(target.getNickname()).thenReturn("냥집사");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(target));
+        when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
 
         DmRoom existingRoom = mock(DmRoom.class);
         when(existingRoom.getId()).thenReturn(5L);
         when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.of(existingRoom));
 
-        DmRoomResponse response = dmService.createRoom(1L, 2L);
+        DmRoomResponse response = dmService.createRoom(1L, "냥집사");
 
-        assertThat(response.getRoomId()).isEqualTo(5L);
+        assertThat(response.roomId()).isEqualTo(5L);
         verify(dmRoomRepository, never()).save(any(DmRoom.class));
     }
 

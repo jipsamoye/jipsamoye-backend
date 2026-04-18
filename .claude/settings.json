@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "./gradlew build -x test 2>&1 | tail -5",
+            "timeout": 120,
+            "statusMessage": "커밋 전 컴파일 확인 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

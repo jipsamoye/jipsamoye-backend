@@ -39,28 +39,27 @@ public class DmServiceImpl implements DmService {
                     var lastMsg = dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(room);
                     long unread = dmMessageRepository.countUnread(room, user);
 
-                    return DmRoomResponse.builder()
-                            .roomId(room.getId())
-                            .otherUserId(other.getId())
-                            .otherUserNickname(other.getNickname())
-                            .otherUserProfileImageUrl(other.getProfileImageUrl())
-                            .lastMessage(lastMsg.map(DmMessage::getContent).orElse(null))
-                            .lastMessageAt(lastMsg.map(DmMessage::getCreatedAt).orElse(null))
-                            .unreadCount(unread)
-                            .build();
+                    return new DmRoomResponse(
+                            room.getId(),
+                            other.getNickname(),
+                            other.getProfileImageUrl(),
+                            lastMsg.map(DmMessage::getContent).orElse(null),
+                            lastMsg.map(DmMessage::getCreatedAt).orElse(null),
+                            unread
+                    );
                 })
                 .toList();
     }
 
     @Override
     @Transactional
-    public DmRoomResponse createRoom(Long userId, Long targetUserId) {
+    public DmRoomResponse createRoom(Long userId, String targetNickname) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        User target = userRepository.findById(targetUserId)
+        User target = userRepository.findByNickname(targetNickname)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        if (userId.equals(targetUserId)) {
+        if (user.getId().equals(target.getId())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "자기 자신에게 DM을 보낼 수 없습니다.");
         }
 
@@ -70,13 +69,14 @@ public class DmServiceImpl implements DmService {
                         .user2(target)
                         .build()));
 
-        return DmRoomResponse.builder()
-                .roomId(room.getId())
-                .otherUserId(target.getId())
-                .otherUserNickname(target.getNickname())
-                .otherUserProfileImageUrl(target.getProfileImageUrl())
-                .unreadCount(0)
-                .build();
+        return new DmRoomResponse(
+                room.getId(),
+                target.getNickname(),
+                target.getProfileImageUrl(),
+                null,
+                null,
+                0
+        );
     }
 
     @Override

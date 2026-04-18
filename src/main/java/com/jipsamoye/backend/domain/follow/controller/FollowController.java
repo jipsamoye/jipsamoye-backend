@@ -2,6 +2,7 @@ package com.jipsamoye.backend.domain.follow.controller;
 
 import com.jipsamoye.backend.domain.follow.dto.response.FollowUserResponse;
 import com.jipsamoye.backend.domain.follow.service.FollowService;
+import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Follow", description = "팔로우 API")
@@ -23,8 +25,8 @@ public class FollowController {
     @PostMapping("/{nickname}/follow")
     public ResponseEntity<ApiResponse<Boolean>> toggleFollow(
             @Parameter(description = "팔로우할 유저 닉네임") @PathVariable String nickname,
-            @Parameter(description = "유저 ID (인증 구현 전 임시)") @RequestParam Long userId) {
-        boolean followed = followService.toggleFollow(nickname, userId);
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        boolean followed = followService.toggleFollow(nickname, userDetails.getUserId());
         String message = followed ? "팔로우 성공" : "언팔로우 성공";
         return ResponseEntity.ok(ApiResponse.success(message, followed));
     }
