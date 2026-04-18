@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 인증 불필요 — 조회 API
                         .requestMatchers(GET, "/api/posts/**").permitAll()
+                        .requestMatchers(GET, "/api/boards/**").permitAll()
                         .requestMatchers(GET, "/api/users/**").permitAll()
                         .requestMatchers(GET, "/api/search").permitAll()
 

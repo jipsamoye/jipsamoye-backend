@@ -1,0 +1,81 @@
+package com.jipsamoye.backend.domain.board.entity;
+
+import com.jipsamoye.backend.domain.user.entity.User;
+import com.jipsamoye.backend.global.entity.BaseEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "boards")
+@SQLRestriction("deleted_at IS NULL")
+public class Board extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private LocalDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BoardCategory category;
+
+    @Column(nullable = false, length = 100)
+    private String title;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "JSON")
+    private List<String> imageUrls = new ArrayList<>();
+
+    @Column(nullable = false)
+    private int viewCount = 0;
+
+    @Column(nullable = false)
+    private int commentCount = 0;
+
+    @Column(nullable = false)
+    private int likeCount = 0;
+
+    @Builder
+    public Board(User user, BoardCategory category, String title, String content, List<String> imageUrls) {
+        this.user = user;
+        this.category = category;
+        this.title = title;
+        this.content = content;
+        this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
+    }
+
+    public void update(String title, String content, List<String> imageUrls, BoardCategory category) {
+        if (title != null) this.title = title;
+        if (content != null) this.content = content;
+        if (imageUrls != null) this.imageUrls = imageUrls;
+        if (category != null) this.category = category;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
+}

@@ -61,6 +61,9 @@ Spring Boot (Docker)
 | `notification` | 알림 생성 · 조회 · 읽음 처리 | `Notification` |
 | `chat` | 채팅방 생성 · 참여 · 메시지 | `ChatRoom`, `ChatMessage` |
 | `dm` | 1:1 다이렉트 메시지 | `DmRoom`, `DmMessage` |
+| `board` | 자유게시판 CRUD (일반/질문 카테고리) | `Board` |
+| `boardComment` | 자유게시판 댓글 CRUD | `BoardComment` |
+| `boardLike` | 자유게시판 좋아요 토글 | `BoardLike` |
 
 ---
 
