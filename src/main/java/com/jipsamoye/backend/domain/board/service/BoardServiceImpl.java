@@ -3,6 +3,7 @@ package com.jipsamoye.backend.domain.board.service;
 import com.jipsamoye.backend.domain.board.dto.request.BoardCreateRequest;
 import com.jipsamoye.backend.domain.board.dto.request.BoardUpdateRequest;
 import com.jipsamoye.backend.domain.board.dto.response.BoardListResponse;
+import com.jipsamoye.backend.domain.board.dto.response.BoardRecentResponse;
 import com.jipsamoye.backend.domain.board.dto.response.BoardResponse;
 import com.jipsamoye.backend.domain.board.entity.Board;
 import com.jipsamoye.backend.domain.board.entity.BoardCategory;
@@ -12,6 +13,7 @@ import com.jipsamoye.backend.domain.boardLike.repository.BoardLikeRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
+import java.util.List;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
@@ -115,5 +117,14 @@ public class BoardServiceImpl implements BoardService {
         }
 
         return PageResponse.from(boardPage);
+    }
+
+    @Override
+    public List<BoardRecentResponse> getRecentBoards() {
+        return boardRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 5))
+                .getContent()
+                .stream()
+                .map(BoardRecentResponse::from)
+                .toList();
     }
 }

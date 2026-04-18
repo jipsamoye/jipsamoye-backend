@@ -3,6 +3,7 @@ package com.jipsamoye.backend.domain.board.controller;
 import com.jipsamoye.backend.domain.board.dto.request.BoardCreateRequest;
 import com.jipsamoye.backend.domain.board.dto.request.BoardUpdateRequest;
 import com.jipsamoye.backend.domain.board.dto.response.BoardListResponse;
+import com.jipsamoye.backend.domain.board.dto.response.BoardRecentResponse;
 import com.jipsamoye.backend.domain.board.dto.response.BoardResponse;
 import com.jipsamoye.backend.domain.board.entity.BoardCategory;
 import com.jipsamoye.backend.domain.board.service.BoardService;
@@ -14,6 +15,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,6 +28,12 @@ import org.springframework.web.bind.annotation.*;
 public class BoardController {
 
     private final BoardService boardService;
+
+    @Operation(summary = "최신 글 (메인 페이지용)", description = "자유게시판 최신 글 5개를 조회합니다.")
+    @GetMapping("/recent")
+    public ResponseEntity<ApiResponse<List<BoardRecentResponse>>> getRecentBoards() {
+        return ResponseEntity.ok(ApiResponse.success(boardService.getRecentBoards()));
+    }
 
     @Operation(summary = "게시글 작성", description = "자유게시판 게시글을 작성합니다.")
     @PostMapping
