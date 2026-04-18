@@ -121,7 +121,7 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     public List<BoardRecentResponse> getRecentBoards() {
-        return boardRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 5))
+        return boardRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 3))
                 .getContent()
                 .stream()
                 .map(BoardRecentResponse::from)

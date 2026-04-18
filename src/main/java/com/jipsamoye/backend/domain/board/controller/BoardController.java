@@ -29,7 +29,7 @@ public class BoardController {
 
     private final BoardService boardService;
 
-    @Operation(summary = "최신 글 (메인 페이지용)", description = "자유게시판 최신 글 5개를 조회합니다.")
+    @Operation(summary = "최신 글 (메인 페이지용)", description = "자유게시판 최신 글 3개를 조회합니다.")
     @GetMapping("/recent")
     public ResponseEntity<ApiResponse<List<BoardRecentResponse>>> getRecentBoards() {
         return ResponseEntity.ok(ApiResponse.success(boardService.getRecentBoards()));
