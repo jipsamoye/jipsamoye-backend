@@ -77,7 +77,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    @DisplayName("createGuest - 둘러보기 세션 생성 후 has_session 힌트 쿠키를 발급한다")
+    @DisplayName("createGuest - 둘러보기 세션 생성 후 has_session 힌트 쿠키를 session cookie로 발급한다")
     void createGuest_setsSessionHintCookie() {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User saved = invocation.getArgument(0);
@@ -93,7 +93,8 @@ class AuthServiceImplTest {
 
         assertThat(header).startsWith("has_session=1");
         assertThat(header).contains("Domain=jipsamoye.com");
-        assertThat(header).contains("Max-Age=7200");
+        // Max-Age 없음: JSESSIONID와 수명 일치, Spring Session rolling과 어긋나지 않음
+        assertThat(header).doesNotContain("Max-Age");
         assertThat(header).doesNotContain("HttpOnly");
     }
 

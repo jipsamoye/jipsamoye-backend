@@ -25,7 +25,6 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -116,8 +115,7 @@ public class AuthServiceImpl implements AuthService {
 
     private void setSessionHintCookie() {
         Cookie cookieConfig = serverProperties.getServlet().getSession().getCookie();
-        Duration maxAge = serverProperties.getServlet().getSession().getTimeout();
-        SessionHintCookie.set(httpServletResponse, cookieConfig.getDomain(), isSecure(cookieConfig), maxAge);
+        SessionHintCookie.set(httpServletResponse, cookieConfig.getDomain(), isSecure(cookieConfig));
     }
 
     private void clearSessionHintCookie() {
