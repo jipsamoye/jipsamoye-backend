@@ -12,8 +12,12 @@ import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.exception.BusinessException;
+import com.jipsamoye.backend.global.util.SessionHintCookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.web.server.Cookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,6 +25,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -34,6 +39,8 @@ public class AuthServiceImpl implements AuthService {
     private final LikeRepository likeRepository;
     private final FollowRepository followRepository;
     private final HttpSession httpSession;
+    private final HttpServletResponse httpServletResponse;
+    private final ServerProperties serverProperties;
 
     @Override
     @Transactional
@@ -64,6 +71,9 @@ public class AuthServiceImpl implements AuthService {
         httpSession.setAttribute(
                 HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
 
+        // 프론트가 /api/auth/me 호출 여부를 판단할 수 있도록 힌트 쿠키 발급
+        setSessionHintCookie();
+
         return UserResponse.of(saved, 0, 0, 0);
     }
 
@@ -83,6 +93,7 @@ public class AuthServiceImpl implements AuthService {
     public void logout() {
         SecurityContextHolder.clearContext();
         httpSession.invalidate();
+        clearSessionHintCookie();
     }
 
     @Override
@@ -100,5 +111,21 @@ public class AuthServiceImpl implements AuthService {
 
         SecurityContextHolder.clearContext();
         httpSession.invalidate();
+        clearSessionHintCookie();
+    }
+
+    private void setSessionHintCookie() {
+        Cookie cookieConfig = serverProperties.getServlet().getSession().getCookie();
+        Duration maxAge = serverProperties.getServlet().getSession().getTimeout();
+        SessionHintCookie.set(httpServletResponse, cookieConfig.getDomain(), isSecure(cookieConfig), maxAge);
+    }
+
+    private void clearSessionHintCookie() {
+        Cookie cookieConfig = serverProperties.getServlet().getSession().getCookie();
+        SessionHintCookie.clear(httpServletResponse, cookieConfig.getDomain(), isSecure(cookieConfig));
+    }
+
+    private static boolean isSecure(Cookie cookieConfig) {
+        return Boolean.TRUE.equals(cookieConfig.getSecure());
     }
 }
