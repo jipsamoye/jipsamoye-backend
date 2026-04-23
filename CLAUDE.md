@@ -46,6 +46,7 @@
 - [아키텍처](docs/ARCHITECTURE.md) — 시스템 구조, 도메인 맵, 레이어 규칙, 패키지 구조
 - [코드 컨벤션](docs/CONVENTIONS.md) — @Setter 금지, ApiResponse 래퍼, DTO 위치, Service 패턴
 - [배포 & 운영](docs/DEPLOYMENT.md) — 배포 프로세스, 서버 정보, Discord 알림 형식
+- [인프라 구성](docs/INFRASTRUCTURE.md) — AWS/Cloudflare 리소스, 도메인, 이미지 파이프라인, S3 경로 규약
 - [품질 현황](docs/QUALITY.md) — 도메인별 품질 등급, 알려진 기술 부채
 - [PRD](docs/PRD.md) — 제품 요구사항 (서비스 개요, 기능 정의, 로드맵)
 - [PR 템플릿](docs/PR_TEMPLATE.md) — PR 생성 시 사용하는 템플릿
