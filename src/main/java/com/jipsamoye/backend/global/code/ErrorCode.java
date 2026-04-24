@@ -20,15 +20,25 @@ public enum ErrorCode {
     FORBIDDEN(403, "FORBIDDEN", "권한이 없습니다."),
 
     // 404
+    NOT_FOUND(404, "NOT_FOUND", "요청한 리소스를 찾을 수 없습니다."),
     USER_NOT_FOUND(404, "USER_NOT_FOUND", "유저를 찾을 수 없습니다."),
     POST_NOT_FOUND(404, "POST_NOT_FOUND", "게시글을 찾을 수 없습니다."),
     COMMENT_NOT_FOUND(404, "COMMENT_NOT_FOUND", "댓글을 찾을 수 없습니다."),
     BOARD_NOT_FOUND(404, "BOARD_NOT_FOUND", "게시글을 찾을 수 없습니다."),
     BOARD_COMMENT_NOT_FOUND(404, "BOARD_COMMENT_NOT_FOUND", "댓글을 찾을 수 없습니다."),
 
+    // 405
+    METHOD_NOT_ALLOWED(405, "METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 메서드입니다."),
+
+    // 406
+    NOT_ACCEPTABLE(406, "NOT_ACCEPTABLE", "응답 형식을 맞출 수 없습니다."),
+
     // 409
     DUPLICATE_NICKNAME(409, "DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다."),
     DUPLICATE_LIKE(409, "DUPLICATE_LIKE", "이미 좋아요한 게시글입니다."),
+
+    // 415
+    UNSUPPORTED_MEDIA_TYPE(415, "UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 Content-Type입니다."),
 
     // 500
     INTERNAL_SERVER_ERROR(500, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."),
