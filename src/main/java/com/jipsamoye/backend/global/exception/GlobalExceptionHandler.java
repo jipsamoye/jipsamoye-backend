@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -87,6 +90,35 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "요청한 리소스를 찾을 수 없습니다."));
+    }
+
+    // 경로는 있는데 HTTP 메서드가 허용 안 된 경우 (예: POST / — GET / 만 매핑됨).
+    // Unhandled 로 catch-all 에 떨어지면 500 + Discord 알림 발사되므로 별도 처리.
+    // 봇 스캐너의 공격적 스캔 요청이 대부분 이 경로로 들어옴.
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException e) {
+        log.warn("Method not allowed: {} (supported: {})", e.getMethod(), e.getSupportedHttpMethods());
+        return ResponseEntity
+                .status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "지원하지 않는 HTTP 메서드입니다."));
+    }
+
+    // 요청 Content-Type 이 컨트롤러가 받아들이는 타입이 아닐 때.
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        log.warn("Media type not supported: {}", e.getContentType());
+        return ResponseEntity
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "지원하지 않는 Content-Type입니다."));
+    }
+
+    // 요청 Accept 헤더로 돌려줄 수 있는 표현이 없을 때.
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleMediaTypeNotAcceptable(HttpMediaTypeNotAcceptableException e) {
+        log.warn("Media type not acceptable: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_ACCEPTABLE)
+                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "응답 형식을 맞출 수 없습니다."));
     }
 
     @ExceptionHandler(Exception.class)
