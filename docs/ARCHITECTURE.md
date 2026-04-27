@@ -53,7 +53,7 @@ Spring Boot (Docker)
 |--------|------|------------|
 | `auth` | 소셜 로그인, 세션 관리, 토큰 처리 | - |
 | `user` | 회원 정보 조회 · 수정, 프로필 | `User` |
-| `petPost` | 반려동물 게시글 CRUD, 피드 | `PetPost` |
+| `petPost` | 반려동물 게시글 CRUD, 피드, 기간별 좋아요 랭킹 | `PetPost` |
 | `comment` | 게시글 댓글 CRUD | `Comment` |
 | `like` | 게시글 좋아요 · 취소 | `Like` |
 | `follow` | 팔로우 · 언팔로우, 팔로워/팔로잉 목록 | `Follow` |

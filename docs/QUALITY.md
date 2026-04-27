@@ -1,6 +1,6 @@
 # 집사모여 — 품질 현황
 
-> 마지막 업데이트: 2026-04-18
+> 마지막 업데이트: 2026-04-27
 
 ## 도메인별 품질 등급
 
@@ -8,7 +8,7 @@
 |--------|------|--------|------|
 | auth | B | 없음 | 소셜 로그인 + 회원 탈퇴 로직 복잡, 테스트 필요 |
 | user | B | 있음 | UserService 테스트 존재 |
-| petPost | B | 없음 | CRUD + 이미지 연동 |
+| petPost | B | 있음 | CRUD + 이미지 연동 + 기간별 랭킹. RankingServiceImplTest(단위), PetPostControllerRankingTest(WebMvc) 존재 |
 | comment | B | 없음 | 기본 CRUD |
 | like | B | 없음 | 토글 로직 |
 | follow | B | 없음 | 토글 로직 |
