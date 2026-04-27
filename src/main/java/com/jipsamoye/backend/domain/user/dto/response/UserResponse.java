@@ -15,9 +15,12 @@ public record UserResponse(
         long postCount,
         long followerCount,
         long followingCount,
+        long totalLikeCount,
+        Long ranking,
         LocalDateTime createdAt
 ) {
-    public static UserResponse of(User user, long postCount, long followerCount, long followingCount) {
+    public static UserResponse of(User user, long postCount, long followerCount, long followingCount,
+                                  long totalLikeCount, Long ranking) {
         return new UserResponse(
                 user.getNickname(),
                 user.getBio(),
@@ -27,6 +30,8 @@ public record UserResponse(
                 postCount,
                 followerCount,
                 followingCount,
+                totalLikeCount,
+                ranking,
                 user.getCreatedAt()
         );
     }

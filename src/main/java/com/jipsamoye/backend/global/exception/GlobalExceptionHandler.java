@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -58,6 +59,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ErrorCode.MISSING_PARAMETER, e.getMessage()));
     }
 
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
+        log.warn("Type mismatch for parameter '{}': {}", e.getName(), e.getMessage());
+        String message = String.format("파라미터 '%s'의 값이 올바르지 않습니다.", e.getName());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, message));
+    }
+
     @ExceptionHandler(MissingServletRequestPartException.class)
     protected ResponseEntity<ApiResponse<Void>> handleMissingServletRequestPartException(
             MissingServletRequestPartException e) {
@@ -81,7 +92,7 @@ public class GlobalExceptionHandler {
         log.warn("No resource found: {}", e.getResourcePath());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "요청한 리소스를 찾을 수 없습니다."));
+                .body(ApiResponse.error(ErrorCode.NOT_FOUND));
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
@@ -89,7 +100,7 @@ public class GlobalExceptionHandler {
         log.warn("No handler found: {}", e.getRequestURL());
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "요청한 리소스를 찾을 수 없습니다."));
+                .body(ApiResponse.error(ErrorCode.NOT_FOUND));
     }
 
     // 경로는 있는데 HTTP 메서드가 허용 안 된 경우 (예: POST / — GET / 만 매핑됨).
@@ -100,7 +111,7 @@ public class GlobalExceptionHandler {
         log.warn("Method not allowed: {} (supported: {})", e.getMethod(), e.getSupportedHttpMethods());
         return ResponseEntity
                 .status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "지원하지 않는 HTTP 메서드입니다."));
+                .body(ApiResponse.error(ErrorCode.METHOD_NOT_ALLOWED));
     }
 
     // 요청 Content-Type 이 컨트롤러가 받아들이는 타입이 아닐 때.
@@ -109,7 +120,7 @@ public class GlobalExceptionHandler {
         log.warn("Media type not supported: {}", e.getContentType());
         return ResponseEntity
                 .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "지원하지 않는 Content-Type입니다."));
+                .body(ApiResponse.error(ErrorCode.UNSUPPORTED_MEDIA_TYPE));
     }
 
     // 요청 Accept 헤더로 돌려줄 수 있는 표현이 없을 때.
@@ -118,7 +129,7 @@ public class GlobalExceptionHandler {
         log.warn("Media type not acceptable: {}", e.getMessage());
         return ResponseEntity
                 .status(HttpStatus.NOT_ACCEPTABLE)
-                .body(ApiResponse.error(ErrorCode.BAD_REQUEST, "응답 형식을 맞출 수 없습니다."));
+                .body(ApiResponse.error(ErrorCode.NOT_ACCEPTABLE));
     }
 
     @ExceptionHandler(Exception.class)

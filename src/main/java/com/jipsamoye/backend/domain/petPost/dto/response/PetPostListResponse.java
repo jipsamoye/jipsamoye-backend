@@ -10,9 +10,10 @@ public record PetPostListResponse(
         String thumbnailUrl,
         int likeCount,
         String nickname,
+        String profileImageUrl,
         LocalDateTime createdAt
 ) {
-    // 탈퇴한 유저의 게시글은 "탈퇴한 사용자"로 표시
+    // 탈퇴한 유저의 게시글은 닉네임을 "탈퇴한 사용자"로 마스킹하고 프로필 이미지는 null로 내려보낸다
     public static PetPostListResponse from(PetPost petPost) {
         boolean isUserDeleted = petPost.getUser().isDeleted();
         return new PetPostListResponse(
@@ -21,6 +22,7 @@ public record PetPostListResponse(
                 petPost.getImageUrls().isEmpty() ? null : petPost.getImageUrls().get(0),
                 petPost.getLikeCount(),
                 isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname(),
+                isUserDeleted ? null : petPost.getUser().getProfileImageUrl(),
                 petPost.getCreatedAt()
         );
     }

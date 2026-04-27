@@ -18,7 +18,9 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "pet_post")
+@Table(name = "pet_post", indexes = {
+        @Index(name = "idx_pet_post_created_like", columnList = "created_at, like_count")
+})
 @SQLRestriction("deleted_at IS NULL")
 public class PetPost extends BaseEntity {
 

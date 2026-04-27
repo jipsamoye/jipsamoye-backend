@@ -33,7 +33,8 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getCode()).isEqualTo(ErrorCode.BAD_REQUEST.getCode());
+        assertThat(response.getBody().getStatus()).isEqualTo(405);
+        assertThat(response.getBody().getCode()).isEqualTo(ErrorCode.METHOD_NOT_ALLOWED.getCode());
         assertThat(response.getBody().getMessage()).contains("지원하지 않는 HTTP 메서드");
     }
 
@@ -47,6 +48,8 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
         assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(415);
+        assertThat(response.getBody().getCode()).isEqualTo(ErrorCode.UNSUPPORTED_MEDIA_TYPE.getCode());
         assertThat(response.getBody().getMessage()).contains("Content-Type");
     }
 
@@ -60,6 +63,8 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_ACCEPTABLE);
         assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(406);
+        assertThat(response.getBody().getCode()).isEqualTo(ErrorCode.NOT_ACCEPTABLE.getCode());
         assertThat(response.getBody().getMessage()).contains("응답 형식");
     }
 
