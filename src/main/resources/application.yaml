@@ -19,6 +19,9 @@ spring:
   profiles:
     active: local
 
+  jackson:
+    time-zone: Asia/Seoul
+
   jpa:
     open-in-view: false
     hibernate:
