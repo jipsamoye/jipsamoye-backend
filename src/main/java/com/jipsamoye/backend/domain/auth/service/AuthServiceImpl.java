@@ -73,7 +73,8 @@ public class AuthServiceImpl implements AuthService {
         // 프론트가 /api/auth/me 호출 여부를 판단할 수 있도록 힌트 쿠키 발급
         setSessionHintCookie();
 
-        return UserResponse.of(saved, 0, 0, 0, calculateRank(saved.getId()));
+        RankingResult ranking = calculateRanking(saved.getId());
+        return UserResponse.of(saved, 0, 0, 0, ranking.totalLikeCount(), ranking.ranking());
     }
 
     @Override
@@ -84,17 +85,21 @@ public class AuthServiceImpl implements AuthService {
         long postCount = petPostRepository.countByUser(user);
         long followerCount = followRepository.countByFollowing(user);
         long followingCount = followRepository.countByFollower(user);
-        Long rank = calculateRank(user.getId());
+        RankingResult ranking = calculateRanking(user.getId());
 
-        return UserResponse.of(user, postCount, followerCount, followingCount, rank);
+        return UserResponse.of(user, postCount, followerCount, followingCount,
+                ranking.totalLikeCount(), ranking.ranking());
     }
 
-    private Long calculateRank(Long userId) {
-        long totalLikes = petPostRepository.sumLikeCountByUserId(userId);
-        return totalLikes > 0
-                ? userRepository.countActiveUsersWithMoreLikesThan(totalLikes) + 1
+    private RankingResult calculateRanking(Long userId) {
+        long totalLikeCount = petPostRepository.sumLikeCountByUserId(userId);
+        Long ranking = totalLikeCount > 0
+                ? userRepository.countActiveUsersWithMoreLikesThan(totalLikeCount) + 1
                 : null;
+        return new RankingResult(totalLikeCount, ranking);
     }
+
+    private record RankingResult(long totalLikeCount, Long ranking) {}
 
     @Override
     @Transactional

@@ -68,8 +68,8 @@ class UserServiceImplTest {
     }
 
     @Test
-    @DisplayName("getProfile - 좋아요 합계가 가장 높으면 rank=1")
-    void getProfile_topRanker_rankIsOne() {
+    @DisplayName("getProfile - 좋아요 합계가 가장 높으면 ranking=1, totalLikeCount는 합계")
+    void getProfile_topRanker_rankingIsOne() {
         User user = mockActiveUser(1L, "탑유저");
         when(userRepository.findByNickname("탑유저")).thenReturn(Optional.of(user));
         when(petPostRepository.countByUser(user)).thenReturn(5L);
@@ -80,13 +80,14 @@ class UserServiceImplTest {
 
         UserResponse response = userService.getProfile("탑유저");
 
-        assertThat(response.rank()).isEqualTo(1L);
+        assertThat(response.ranking()).isEqualTo(1L);
+        assertThat(response.totalLikeCount()).isEqualTo(100L);
         assertThat(response.postCount()).isEqualTo(5L);
     }
 
     @Test
-    @DisplayName("getProfile - 동률 처리: 나보다 큰 유저가 2명이면 rank=3 (같은점수=같은등수, 다음 등수 건너뜀)")
-    void getProfile_tieRule_rankSkipsAfterTies() {
+    @DisplayName("getProfile - 동률 처리: 나보다 큰 유저가 2명이면 ranking=3 (같은점수=같은등수, 다음 등수 건너뜀)")
+    void getProfile_tieRule_rankingSkipsAfterTies() {
         User user = mockActiveUser(2L, "동률유저");
         when(userRepository.findByNickname("동률유저")).thenReturn(Optional.of(user));
         when(petPostRepository.countByUser(user)).thenReturn(3L);
@@ -97,12 +98,13 @@ class UserServiceImplTest {
 
         UserResponse response = userService.getProfile("동률유저");
 
-        assertThat(response.rank()).isEqualTo(3L);
+        assertThat(response.ranking()).isEqualTo(3L);
+        assertThat(response.totalLikeCount()).isEqualTo(50L);
     }
 
     @Test
-    @DisplayName("getProfile - 좋아요 0인 유저는 rank=null")
-    void getProfile_zeroLikes_rankNull() {
+    @DisplayName("getProfile - 좋아요 0인 유저는 ranking=null, totalLikeCount=0")
+    void getProfile_zeroLikes_rankingNull() {
         User user = mockActiveUser(3L, "신규유저");
         when(userRepository.findByNickname("신규유저")).thenReturn(Optional.of(user));
         when(petPostRepository.countByUser(user)).thenReturn(0L);
@@ -112,7 +114,8 @@ class UserServiceImplTest {
 
         UserResponse response = userService.getProfile("신규유저");
 
-        assertThat(response.rank()).isNull();
+        assertThat(response.ranking()).isNull();
+        assertThat(response.totalLikeCount()).isEqualTo(0L);
     }
 
     @Test
