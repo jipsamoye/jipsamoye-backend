@@ -4,18 +4,17 @@ import com.jipsamoye.backend.domain.petPost.dto.response.RankingPageResponse;
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.petPost.entity.RankingPeriod;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
-import com.jipsamoye.backend.domain.user.entity.Provider;
-import com.jipsamoye.backend.domain.user.entity.Role;
-import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.global.exception.BusinessException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,40 +24,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class RankingServiceImplTest {
 
-    private PetPostRepository petPostRepository;
+    @InjectMocks
     private RankingServiceImpl rankingService;
 
+    @Mock
+    private PetPostRepository petPostRepository;
+
     private static final Pageable DEFAULT_PAGEABLE = PageRequest.of(0, 20);
-
-    @BeforeEach
-    void setUp() {
-        petPostRepository = mock(PetPostRepository.class);
-        rankingService = new RankingServiceImpl(petPostRepository);
-    }
-
-    private User testUser() {
-        return User.builder()
-                .nickname("테스터")
-                .email("tester@example.com")
-                .provider(Provider.KAKAO)
-                .providerId("kakao-123")
-                .role(Role.USER)
-                .build();
-    }
-
-    private PetPost testPost(User user) {
-        return PetPost.builder()
-                .user(user)
-                .title("테스트 게시글")
-                .content("내용")
-                .imageUrls(List.of("https://cdn.example.com/img.jpg"))
-                .build();
-    }
 
     private Page<PetPost> emptyPage() {
         return new PageImpl<>(List.of(), DEFAULT_PAGEABLE, 0);
@@ -67,7 +44,6 @@ class RankingServiceImplTest {
     @Test
     @DisplayName("WEEKLY - 월요일(2026-04-20) 기준: startDate=04.20(월), endDate=04.26(일)")
     void getRanking_weekly_monday() {
-        // 2026-04-20은 월요일
         LocalDate monday = LocalDate.of(2026, 4, 20);
         LocalDateTime expectedStart = LocalDateTime.of(2026, 4, 20, 0, 0, 0);
         LocalDateTime expectedEnd = LocalDateTime.of(2026, 4, 27, 0, 0, 0);
@@ -79,7 +55,7 @@ class RankingServiceImplTest {
 
         assertThat(response.period()).isEqualTo(RankingPeriod.WEEKLY);
         assertThat(response.startDate()).isEqualTo(LocalDate.of(2026, 4, 20));
-        assertThat(response.endDate()).isEqualTo(LocalDate.of(2026, 4, 26)); // inclusive
+        assertThat(response.endDate()).isEqualTo(LocalDate.of(2026, 4, 26));
     }
 
     @Test
@@ -113,7 +89,7 @@ class RankingServiceImplTest {
 
         assertThat(response.period()).isEqualTo(RankingPeriod.MONTHLY);
         assertThat(response.startDate()).isEqualTo(LocalDate.of(2026, 3, 1));
-        assertThat(response.endDate()).isEqualTo(LocalDate.of(2026, 3, 31)); // inclusive
+        assertThat(response.endDate()).isEqualTo(LocalDate.of(2026, 3, 31));
     }
 
     @Test
@@ -130,13 +106,12 @@ class RankingServiceImplTest {
         RankingPageResponse response = rankingService.getRanking(RankingPeriod.MONTHLY, leapFeb, DEFAULT_PAGEABLE);
 
         assertThat(response.startDate()).isEqualTo(LocalDate.of(2024, 2, 1));
-        assertThat(response.endDate()).isEqualTo(LocalDate.of(2024, 2, 29)); // inclusive
+        assertThat(response.endDate()).isEqualTo(LocalDate.of(2024, 2, 29));
     }
 
     @Test
     @DisplayName("미래 기간(startDate > today) 요청 시 BusinessException 발생")
     void getRanking_futureDate_throwsBusinessException() {
-        // 충분히 미래의 날짜
         LocalDate futureDate = LocalDate.now().plusMonths(2);
 
         assertThatThrownBy(() -> rankingService.getRanking(RankingPeriod.WEEKLY, futureDate, DEFAULT_PAGEABLE))
@@ -147,7 +122,6 @@ class RankingServiceImplTest {
     @Test
     @DisplayName("isOngoing - 현재 진행 중인 주간은 true")
     void getRanking_weekly_isOngoing_true() {
-        // today가 속한 주는 isOngoing = true
         LocalDate today = LocalDate.now();
 
         when(petPostRepository.findRanking(any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
