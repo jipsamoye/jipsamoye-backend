@@ -47,4 +47,9 @@ public interface PetPostRepository extends JpaRepository<PetPost, Long> {
 
     @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM PetPost p WHERE p.user.id = :userId")
     long sumLikeCountByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT p FROM PetPost p " +
+           "WHERE p.user.id IN (SELECT f.following.id FROM Follow f WHERE f.follower.id = :followerId) " +
+           "ORDER BY p.createdAt DESC, p.id DESC")
+    Page<PetPost> findFeedByFollowerId(@Param("followerId") Long followerId, Pageable pageable);
 }
