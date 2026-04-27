@@ -124,4 +124,12 @@ public class PetPostServiceImpl implements PetPostService {
                 .map(PetPostListResponse::from)
                 .toList();
     }
+
+    @Override
+    public PageResponse<PetPostListResponse> getFeed(Long userId, int page, int size) {
+        Page<PetPostListResponse> feedPage = petPostRepository
+                .findFeedByFollowerId(userId, PageRequest.of(page, size))
+                .map(PetPostListResponse::from);
+        return PageResponse.from(feedPage);
+    }
 }

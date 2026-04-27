@@ -109,6 +109,16 @@ public class PetPostController {
         return ResponseEntity.ok(ApiResponse.success("게시글 삭제 성공"));
     }
 
+    @Operation(summary = "팔로우 피드", description = "팔로우한 사용자의 최신 게시글을 조회합니다.")
+    @GetMapping("/feed")
+    public ResponseEntity<ApiResponse<PageResponse<PetPostListResponse>>> getFeed(
+            @Parameter(description = "페이지 번호 (0부터)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기 (1~50)") @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        PageResponse<PetPostListResponse> response = petPostService.getFeed(userDetails.getUserId(), page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @Operation(summary = "게시글 검색", description = "제목 기반으로 게시글을 검색합니다.")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<?>>> searchPosts(

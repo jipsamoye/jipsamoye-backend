@@ -32,4 +32,6 @@ public interface PetPostService {
     List<PetPostListResponse> getPopularPosts();
 
     List<PetPostListResponse> getTop10Posts();
+
+    PageResponse<PetPostListResponse> getFeed(Long userId, int page, int size);
 }
