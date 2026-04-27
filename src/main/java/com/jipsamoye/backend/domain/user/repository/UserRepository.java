@@ -35,15 +35,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
             ) t WHERE t.total > :myTotal
             """, nativeQuery = true)
     long countActiveUsersWithMoreLikesThan(@Param("myTotal") long myTotal);
-
-    @Query(value = """
-            SELECT COUNT(*) FROM (
-                SELECT u.id, COALESCE(SUM(p.like_count), 0) AS total
-                FROM users u
-                LEFT JOIN pet_post p ON p.user_id = u.id
-                WHERE u.deleted_at IS NULL
-                GROUP BY u.id
-            ) t WHERE t.total > 0
-            """, nativeQuery = true)
-    long countActiveUsersWithLikes();
 }

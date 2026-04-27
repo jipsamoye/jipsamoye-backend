@@ -76,13 +76,11 @@ class UserServiceImplTest {
         when(followRepository.countByFollowing(user)).thenReturn(10L);
         when(followRepository.countByFollower(user)).thenReturn(20L);
         when(petPostRepository.sumLikeCountByUserId(1L)).thenReturn(100L);
-        when(userRepository.countActiveUsersWithLikes()).thenReturn(50L);
         when(userRepository.countActiveUsersWithMoreLikesThan(100L)).thenReturn(0L);
 
         UserResponse response = userService.getProfile("탑유저");
 
         assertThat(response.rank()).isEqualTo(1L);
-        assertThat(response.totalRanked()).isEqualTo(50L);
         assertThat(response.postCount()).isEqualTo(5L);
     }
 
@@ -95,17 +93,15 @@ class UserServiceImplTest {
         when(followRepository.countByFollowing(user)).thenReturn(0L);
         when(followRepository.countByFollower(user)).thenReturn(0L);
         when(petPostRepository.sumLikeCountByUserId(2L)).thenReturn(50L);
-        when(userRepository.countActiveUsersWithLikes()).thenReturn(5L);
         when(userRepository.countActiveUsersWithMoreLikesThan(50L)).thenReturn(2L);
 
         UserResponse response = userService.getProfile("동률유저");
 
         assertThat(response.rank()).isEqualTo(3L);
-        assertThat(response.totalRanked()).isEqualTo(5L);
     }
 
     @Test
-    @DisplayName("getProfile - 좋아요 0인 유저는 rank=null, totalRanked는 모집단 그대로")
+    @DisplayName("getProfile - 좋아요 0인 유저는 rank=null")
     void getProfile_zeroLikes_rankNull() {
         User user = mockActiveUser(3L, "신규유저");
         when(userRepository.findByNickname("신규유저")).thenReturn(Optional.of(user));
@@ -113,12 +109,10 @@ class UserServiceImplTest {
         when(followRepository.countByFollowing(user)).thenReturn(0L);
         when(followRepository.countByFollower(user)).thenReturn(0L);
         when(petPostRepository.sumLikeCountByUserId(3L)).thenReturn(0L);
-        when(userRepository.countActiveUsersWithLikes()).thenReturn(50L);
 
         UserResponse response = userService.getProfile("신규유저");
 
         assertThat(response.rank()).isNull();
-        assertThat(response.totalRanked()).isEqualTo(50L);
     }
 
     @Test
