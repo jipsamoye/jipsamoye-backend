@@ -4,6 +4,8 @@ import com.jipsamoye.backend.domain.user.entity.Provider;
 import com.jipsamoye.backend.domain.user.entity.Role;
 import com.jipsamoye.backend.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,4 +24,26 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByNicknameAndDeletedAtIsNull(String nickname);
 
     List<User> findAllByRoleAndDeletedAtIsNullAndCreatedAtBefore(Role role, LocalDateTime before);
+
+    @Query(value = """
+            SELECT COUNT(*) FROM (
+                SELECT u.id, COALESCE(SUM(p.like_count), 0) AS total
+                FROM users u
+                LEFT JOIN pet_post p ON p.user_id = u.id
+                WHERE u.deleted_at IS NULL
+                GROUP BY u.id
+            ) t WHERE t.total > :myTotal
+            """, nativeQuery = true)
+    long countActiveUsersWithMoreLikesThan(@Param("myTotal") long myTotal);
+
+    @Query(value = """
+            SELECT COUNT(*) FROM (
+                SELECT u.id, COALESCE(SUM(p.like_count), 0) AS total
+                FROM users u
+                LEFT JOIN pet_post p ON p.user_id = u.id
+                WHERE u.deleted_at IS NULL
+                GROUP BY u.id
+            ) t WHERE t.total > 0
+            """, nativeQuery = true)
+    long countActiveUsersWithLikes();
 }
