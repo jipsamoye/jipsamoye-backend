@@ -41,6 +41,7 @@ class PetPostListResponseTest {
         assertThat(response.nickname()).isEqualTo("테스터");
         assertThat(response.profileImageUrl()).isEqualTo("https://cdn.example.com/me.jpg");
         assertThat(response.thumbnailUrl()).isEqualTo("https://cdn.example.com/img1.jpg");
+        assertThat(response.commentCount()).isZero();
     }
 
     @Test

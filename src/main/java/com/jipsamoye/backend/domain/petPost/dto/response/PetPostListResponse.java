@@ -9,6 +9,7 @@ public record PetPostListResponse(
         String title,
         String thumbnailUrl,
         int likeCount,
+        int commentCount,
         String nickname,
         String profileImageUrl,
         LocalDateTime createdAt
@@ -21,6 +22,7 @@ public record PetPostListResponse(
                 petPost.getTitle(),
                 petPost.getImageUrls().isEmpty() ? null : petPost.getImageUrls().get(0),
                 petPost.getLikeCount(),
+                petPost.getCommentCount(),
                 isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname(),
                 isUserDeleted ? null : petPost.getUser().getProfileImageUrl(),
                 petPost.getCreatedAt()
