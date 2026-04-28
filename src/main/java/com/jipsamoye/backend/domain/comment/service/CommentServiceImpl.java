@@ -58,11 +58,9 @@ public class CommentServiceImpl implements CommentService {
             }
 
             if (parent.isReply()) {
-                // 답글의 답글 → root로 자동 매핑, mentionedUser = 원 답글 작성자
                 mentionedUser = parent.getUser();
                 parent = parent.getParent();
             } else {
-                // 직접 답글 → mentionedUserId가 있으면 fetch
                 if (request.mentionedUserId() != null) {
                     mentionedUser = userRepository.findById(request.mentionedUserId())
                             .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -91,29 +89,94 @@ public class CommentServiceImpl implements CommentService {
         }
 
         long replyCount = parent == null ? commentRepository.countByParentAndDeletedAtIsNull(saved) : 0L;
-        List<CommentResponse> replies = List.of();
-        return CommentResponse.from(saved, replyCount, replies);
+        return CommentResponse.from(saved, replyCount, List.of());
     }
 
     @Override
     @Transactional
     public CommentResponse update(Long commentId, CommentUpdateRequest request, Long userId) {
-        throw new UnsupportedOperationException();
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        if (comment.isMasked()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "삭제된 댓글은 수정할 수 없습니다.");
+        }
+
+        comment.updateContent(request.content());
+
+        long replyCount = comment.isReply() ? 0L : commentRepository.countByParentAndDeletedAtIsNull(comment);
+        return CommentResponse.from(comment, replyCount, List.of());
     }
 
     @Override
     @Transactional
     public void delete(Long commentId, Long userId) {
-        throw new UnsupportedOperationException();
+        Comment comment = commentRepository.findByIdForUpdate(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+
+        if (comment.isReply()) {
+            comment.softDelete();
+            petPostRepository.decrementCommentCount(comment.getPetPost().getId());
+
+            Comment parent = comment.getParent();
+            if (parent.isMasked() && commentRepository.countByParentAndDeletedAtIsNull(parent) == 0) {
+                parent.softDelete();
+                petPostRepository.decrementCommentCount(parent.getPetPost().getId());
+            }
+        } else {
+            long replyCount = commentRepository.countByParentAndDeletedAtIsNull(comment);
+            if (replyCount > 0) {
+                comment.mask();
+            } else {
+                comment.softDelete();
+                petPostRepository.decrementCommentCount(comment.getPetPost().getId());
+            }
+        }
     }
 
     @Override
     public PageResponse<CommentResponse> getCommentsByPost(Long postId, Pageable pageable) {
-        throw new UnsupportedOperationException();
+        Page<Comment> parents = commentRepository.findParentsByPetPostId(postId, pageable);
+
+        if (parents.isEmpty()) {
+            return PageResponse.from(parents.map(p -> CommentResponse.from(p, 0L, List.of())));
+        }
+
+        List<Long> parentIds = parents.getContent().stream()
+                .map(Comment::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Long> countMap = commentRepository.countRepliesGroupedByParentIds(parentIds).stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).longValue()
+                ));
+
+        Map<Long, List<Comment>> repliesMap = commentRepository.findTop3RepliesByParentIds(parentIds).stream()
+                .collect(Collectors.groupingBy(r -> r.getParent().getId()));
+
+        Page<CommentResponse> result = parents.map(p -> {
+            long replyCount = countMap.getOrDefault(p.getId(), 0L);
+            List<CommentResponse> replies = repliesMap.getOrDefault(p.getId(), List.of()).stream()
+                    .map(CommentResponse::ofReply)
+                    .collect(Collectors.toList());
+            return CommentResponse.from(p, replyCount, replies);
+        });
+
+        return PageResponse.from(result);
     }
 
     @Override
     public PageResponse<CommentResponse> getReplies(Long parentId, Pageable pageable) {
-        throw new UnsupportedOperationException();
+        Page<CommentResponse> page = commentRepository.findRepliesByParentId(parentId, pageable)
+                .map(CommentResponse::ofReply);
+        return PageResponse.from(page);
     }
 }

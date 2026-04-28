@@ -13,6 +13,7 @@ import com.jipsamoye.backend.domain.user.entity.Role;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.exception.BusinessException;
+import com.jipsamoye.backend.global.response.PageResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +22,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -180,5 +185,139 @@ class CommentServiceImplTest {
         assertThatThrownBy(() -> commentService.create(req, 2L))
                 .isInstanceOf(BusinessException.class);
         verify(commentRepository, never()).save(any());
+    }
+
+    // ── Task 8: delete 테스트 ────────────────────────────────
+
+    @Test
+    @DisplayName("답글 없는 부모 댓글 삭제 시 soft delete되고 commentCount가 1 감소한다")
+    void delete_parentWithoutReplies_softDeletesAndDecrements() {
+        User author = user(1L, "작성자");
+        PetPost post = petPost(10L, author);
+        Comment parent = parentComment(20L, author, post);
+
+        when(commentRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(parent));
+        when(commentRepository.countByParentAndDeletedAtIsNull(parent)).thenReturn(0L);
+
+        commentService.delete(20L, 1L);
+
+        assertThat(parent.getDeletedAt()).isNotNull();
+        assertThat(parent.isMasked()).isFalse();
+        verify(petPostRepository, times(1)).decrementCommentCount(10L);
+    }
+
+    @Test
+    @DisplayName("답글 있는 부모 댓글 삭제 시 마스킹되고 commentCount는 변동 없다")
+    void delete_parentWithReplies_masksAndKeepsCount() {
+        User author = user(1L, "작성자");
+        PetPost post = petPost(10L, author);
+        Comment parent = parentComment(20L, author, post);
+
+        when(commentRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(parent));
+        when(commentRepository.countByParentAndDeletedAtIsNull(parent)).thenReturn(2L);
+
+        commentService.delete(20L, 1L);
+
+        assertThat(parent.isMasked()).isTrue();
+        assertThat(parent.getDeletedAt()).isNull();
+        verify(petPostRepository, never()).decrementCommentCount(any());
+    }
+
+    @Test
+    @DisplayName("마스킹된 부모의 마지막 답글 삭제 시 부모도 soft delete되고 commentCount가 2 감소한다")
+    void delete_lastReplyOfMaskedParent_cascadesParentDelete() {
+        User parentAuthor = user(1L, "부모작성자");
+        User replyAuthor = user(2L, "답글작성자");
+        PetPost post = petPost(10L, parentAuthor);
+        Comment parent = parentComment(20L, parentAuthor, post);
+        parent.mask();
+
+        Comment reply = Comment.builder()
+                .petPost(post)
+                .user(replyAuthor)
+                .content("답글")
+                .parent(parent)
+                .build();
+        ReflectionTestUtils.setField(reply, "id", 21L);
+
+        when(commentRepository.findByIdForUpdate(21L)).thenReturn(Optional.of(reply));
+        when(commentRepository.countByParentAndDeletedAtIsNull(parent)).thenReturn(0L);
+
+        commentService.delete(21L, 2L);
+
+        assertThat(reply.getDeletedAt()).isNotNull();
+        assertThat(parent.getDeletedAt()).isNotNull();
+        verify(petPostRepository, times(2)).decrementCommentCount(10L);
+    }
+
+    @Test
+    @DisplayName("다른 유저의 댓글 삭제 시도 시 FORBIDDEN 예외가 발생한다")
+    void delete_otherUsersComment_throwsForbidden() {
+        User author = user(1L, "작성자");
+        User other = user(2L, "타인");
+        PetPost post = petPost(10L, author);
+        Comment comment = parentComment(20L, author, post);
+
+        when(commentRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(comment));
+
+        assertThatThrownBy(() -> commentService.delete(20L, 2L))
+                .isInstanceOf(BusinessException.class);
+        verify(petPostRepository, never()).decrementCommentCount(any());
+    }
+
+    // ── Task 9: getCommentsByPost / getReplies 테스트 ────────
+
+    @Test
+    @DisplayName("게시글 댓글 조회 시 부모에 답글과 replyCount가 올바르게 첨부된다")
+    void getCommentsByPost_attachesRepliesAndCount() {
+        User author = user(1L, "작성자");
+        PetPost post = petPost(10L, author);
+
+        Comment parent1 = parentComment(20L, author, post);
+        Comment parent2 = parentComment(21L, author, post);
+
+        Comment reply1 = Comment.builder().petPost(post).user(author).content("답글1").parent(parent1).build();
+        Comment reply2 = Comment.builder().petPost(post).user(author).content("답글2").parent(parent1).build();
+        ReflectionTestUtils.setField(reply1, "id", 30L);
+        ReflectionTestUtils.setField(reply2, "id", 31L);
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(commentRepository.findParentsByPetPostId(10L, pageable))
+                .thenReturn(new PageImpl<>(List.of(parent1, parent2)));
+        when(commentRepository.countRepliesGroupedByParentIds(List.of(20L, 21L)))
+                .thenReturn(List.<Object[]>of(new Object[]{20L, 2L}));
+        when(commentRepository.findTop3RepliesByParentIds(List.of(20L, 21L)))
+                .thenReturn(List.of(reply1, reply2));
+
+        PageResponse<CommentResponse> result = commentService.getCommentsByPost(10L, pageable);
+
+        assertThat(result.getContent()).hasSize(2);
+        CommentResponse first = result.getContent().get(0);
+        assertThat(first.replyCount()).isEqualTo(2L);
+        assertThat(first.replies()).hasSize(2);
+        CommentResponse second = result.getContent().get(1);
+        assertThat(second.replyCount()).isEqualTo(0L);
+        assertThat(second.replies()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("답글 더보기 조회 시 오래된 순 단일 페이지가 반환된다")
+    void getReplies_returnsOldestFirstPage() {
+        User author = user(1L, "작성자");
+        PetPost post = petPost(10L, author);
+        Comment parent = parentComment(20L, author, post);
+
+        Comment reply = Comment.builder().petPost(post).user(author).content("답글").parent(parent).build();
+        ReflectionTestUtils.setField(reply, "id", 30L);
+
+        Pageable pageable = PageRequest.of(0, 20);
+        when(commentRepository.findRepliesByParentId(20L, pageable))
+                .thenReturn(new PageImpl<>(List.of(reply)));
+
+        PageResponse<CommentResponse> result = commentService.getReplies(20L, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).id()).isEqualTo(30L);
     }
 }
