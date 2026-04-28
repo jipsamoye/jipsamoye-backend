@@ -109,7 +109,7 @@ class CommentServiceImplTest {
     }
 
     @Test
-    @DisplayName("자기 자신에게 답글을 달면 알림 이벤트가 발행되지 않는다")
+    @DisplayName("자기 자신의 댓글에 답글을 달면 알림 이벤트가 발행되지 않는다")
     void create_selfReply_doesNotPublishEvent() {
         User author = user(1L, "작성자");
         PetPost post = petPost(10L, author);
@@ -126,6 +126,35 @@ class CommentServiceImplTest {
 
         CommentCreateRequest req = new CommentCreateRequest(10L, 20L, null, "셀프 답글");
         commentService.create(req, 1L);
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("답글의 답글 시 mentionedUser가 본인이면 알림 이벤트가 발행되지 않는다")
+    void create_selfMention_doesNotPublishEvent() {
+        User postOwner = user(1L, "게시글작성자");
+        User rootAuthor = user(2L, "루트댓글작성자");
+        User replyAuthor = user(3L, "답글작성자");
+        PetPost post = petPost(10L, postOwner);
+
+        Comment root = parentComment(20L, rootAuthor, post);
+        // replyAuthor 본인의 답글에 본인이 또 답글을 다는 케이스
+        Comment reply = Comment.builder()
+                .petPost(post).user(replyAuthor).content("답글").parent(root).build();
+        ReflectionTestUtils.setField(reply, "id", 21L);
+
+        when(petPostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
+        when(commentRepository.findById(21L)).thenReturn(Optional.of(reply));
+        when(commentRepository.save(any())).thenAnswer(inv -> {
+            Comment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 30L);
+            return c;
+        });
+
+        CommentCreateRequest req = new CommentCreateRequest(10L, 21L, null, "셀프 답답글");
+        commentService.create(req, 3L);
 
         verify(eventPublisher, never()).publishEvent(any());
     }
@@ -165,6 +194,11 @@ class CommentServiceImplTest {
         Comment saved = savedCaptor.getValue();
         assertThat(saved.getParent()).isEqualTo(root);
         assertThat(saved.getMentionedUser()).isEqualTo(replyAuthor);
+
+        // 알림은 root 작성자(A)가 아닌 원 답글 작성자(B)에게
+        ArgumentCaptor<NotificationEvent> eventCaptor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getReceiver().getId()).isEqualTo(3L); // replyAuthor = B
     }
 
     @Test

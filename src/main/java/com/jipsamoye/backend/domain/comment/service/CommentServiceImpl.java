@@ -79,9 +79,10 @@ public class CommentServiceImpl implements CommentService {
         Comment saved = commentRepository.save(comment);
         petPostRepository.incrementCommentCount(request.petPostId());
 
-        if (parent != null && !parent.getUser().getId().equals(userId)) {
+        User notifyTarget = (mentionedUser != null) ? mentionedUser : (parent != null ? parent.getUser() : null);
+        if (notifyTarget != null && !notifyTarget.getId().equals(userId)) {
             eventPublisher.publishEvent(new NotificationEvent(
-                    parent.getUser(), user,
+                    notifyTarget, user,
                     NotificationType.PET_POST_COMMENT_REPLY,
                     saved.getId(),
                     user.getNickname() + "님이 회원님의 댓글에 답글을 남겼습니다"
