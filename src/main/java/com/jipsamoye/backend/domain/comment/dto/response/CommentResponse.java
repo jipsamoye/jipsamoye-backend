@@ -3,25 +3,55 @@ package com.jipsamoye.backend.domain.comment.dto.response;
 import com.jipsamoye.backend.domain.comment.entity.Comment;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CommentResponse(
         Long id,
         String content,
         String nickname,
         String profileImageUrl,
+        String mentionedNickname,
+        boolean isMasked,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        long replyCount,
+        List<CommentResponse> replies
 ) {
-    // 탈퇴한 유저의 댓글은 "탈퇴한 사용자"로 표시
-    public static CommentResponse from(Comment comment) {
+    public static CommentResponse from(Comment comment, long replyCount, List<CommentResponse> replies) {
         boolean isUserDeleted = comment.getUser().isDeleted();
+        String mentionedNickname = comment.getMentionedUser() != null
+                ? (comment.getMentionedUser().isDeleted() ? "탈퇴한 사용자" : comment.getMentionedUser().getNickname())
+                : null;
+        return new CommentResponse(
+                comment.getId(),
+                comment.isMasked() ? null : comment.getContent(),
+                isUserDeleted ? "탈퇴한 사용자" : comment.getUser().getNickname(),
+                isUserDeleted ? null : comment.getUser().getProfileImageUrl(),
+                mentionedNickname,
+                comment.isMasked(),
+                comment.getCreatedAt(),
+                comment.getUpdatedAt(),
+                replyCount,
+                replies
+        );
+    }
+
+    public static CommentResponse ofReply(Comment comment) {
+        boolean isUserDeleted = comment.getUser().isDeleted();
+        String mentionedNickname = comment.getMentionedUser() != null
+                ? (comment.getMentionedUser().isDeleted() ? "탈퇴한 사용자" : comment.getMentionedUser().getNickname())
+                : null;
         return new CommentResponse(
                 comment.getId(),
                 comment.getContent(),
                 isUserDeleted ? "탈퇴한 사용자" : comment.getUser().getNickname(),
                 isUserDeleted ? null : comment.getUser().getProfileImageUrl(),
+                mentionedNickname,
+                false,
                 comment.getCreatedAt(),
-                comment.getUpdatedAt()
+                comment.getUpdatedAt(),
+                0L,
+                List.of()
         );
     }
 }

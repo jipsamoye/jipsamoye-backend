@@ -13,5 +13,6 @@ public class NotificationEvent {
     private final User sender;
     private final NotificationType type;
     private final Long targetId;
+    private final Long relatedPostId;
     private final String message;
 }

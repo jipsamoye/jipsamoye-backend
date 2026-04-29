@@ -65,7 +65,7 @@ class NotificationServiceImplTest {
         User user = mock(User.class);
         when(user.getId()).thenReturn(1L);
 
-        notificationService.send(user, user, NotificationType.LIKE, 1L, "테스트");
+        notificationService.send(user, user, NotificationType.LIKE, 1L, 1L, "테스트");
 
         verify(notificationRepository, never()).save(any(Notification.class));
         verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));
@@ -81,7 +81,7 @@ class NotificationServiceImplTest {
         when(notificationRepository.existsBySenderAndReceiverAndTargetIdAndType(sender, receiver, 10L, NotificationType.LIKE))
                 .thenReturn(true);
 
-        notificationService.send(receiver, sender, NotificationType.LIKE, 10L, "테스트");
+        notificationService.send(receiver, sender, NotificationType.LIKE, 10L, 10L, "테스트");
 
         verify(notificationRepository, never()).save(any(Notification.class));
         verify(messagingTemplate, never()).convertAndSend(anyString(), any(Object.class));

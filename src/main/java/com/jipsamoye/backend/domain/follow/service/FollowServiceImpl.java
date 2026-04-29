@@ -54,6 +54,7 @@ public class FollowServiceImpl implements FollowService {
             eventPublisher.publishEvent(new NotificationEvent(
                     following, follower,
                     NotificationType.FOLLOW, follower.getId(),
+                    null,
                     follower.getNickname() + "님이 회원님을 팔로우했습니다"));
             return true;
         }
