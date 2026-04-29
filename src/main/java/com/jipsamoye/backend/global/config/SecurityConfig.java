@@ -29,11 +29,18 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // 인증 필수 — 비로그인 시 NPE 방지 (구체적 매치 먼저)
+                        .requestMatchers(GET, "/api/posts/feed").authenticated()
+                        .requestMatchers(GET, "/api/users/me/likes").authenticated()
+
                         // 인증 불필요 — 조회 API
                         .requestMatchers(GET, "/api/posts/**").permitAll()
                         .requestMatchers(GET, "/api/boards/**").permitAll()
                         .requestMatchers(GET, "/api/users/**").permitAll()
                         .requestMatchers(GET, "/api/search").permitAll()
+                        .requestMatchers(GET, "/api/comments/**").permitAll()
+                        .requestMatchers(GET, "/api/board-comments/**").permitAll()
+                        .requestMatchers(GET, "/api/chat/**").permitAll()
 
                         // 인증 불필요 — 게스트 로그인
                         .requestMatchers(POST, "/api/auth/guest").permitAll()
