@@ -11,55 +11,69 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "BoardComment", description = "자유게시판 댓글 API")
 @RestController
+@RequestMapping("/api/board-comments")
 @RequiredArgsConstructor
+@Validated
 public class BoardCommentController {
 
     private final BoardCommentService boardCommentService;
 
-    @Operation(summary = "댓글 작성", description = "자유게시판 게시글에 댓글을 작성합니다.")
-    @PostMapping("/api/boards/{boardId}/comments")
-    public ResponseEntity<ApiResponse<BoardCommentResponse>> createComment(
-            @Parameter(description = "게시글 ID") @PathVariable Long boardId,
+    @Operation(summary = "댓글/답글 작성")
+    @PostMapping
+    public ResponseEntity<ApiResponse<BoardCommentResponse>> create(
             @Valid @RequestBody BoardCommentCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        BoardCommentResponse response = boardCommentService.createComment(boardId, request, userDetails.getUserId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(response));
+        BoardCommentResponse response = boardCommentService.create(request, userDetails.getUserId());
+        return ResponseEntity.status(201).body(ApiResponse.created(response));
     }
 
-    @Operation(summary = "댓글 목록 조회", description = "게시글의 댓글 목록을 조회합니다.")
-    @GetMapping("/api/boards/{boardId}/comments")
-    public ResponseEntity<ApiResponse<PageResponse<BoardCommentResponse>>> getComments(
-            @Parameter(description = "게시글 ID") @PathVariable Long boardId,
-            @Parameter(description = "페이지 번호 (0부터)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size) {
-        PageResponse<BoardCommentResponse> response = boardCommentService.getComments(boardId, page, size);
-        return ResponseEntity.ok(ApiResponse.success(response));
-    }
-
-    @Operation(summary = "댓글 수정", description = "본인 댓글만 수정할 수 있습니다.")
-    @PatchMapping("/api/board-comments/{id}")
-    public ResponseEntity<ApiResponse<BoardCommentResponse>> updateComment(
-            @Parameter(description = "댓글 ID") @PathVariable Long id,
+    @Operation(summary = "댓글 수정")
+    @PatchMapping("/{commentId}")
+    public ResponseEntity<ApiResponse<BoardCommentResponse>> update(
+            @Parameter(description = "댓글 ID") @PathVariable Long commentId,
             @Valid @RequestBody BoardCommentUpdateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        BoardCommentResponse response = boardCommentService.updateComment(id, request, userDetails.getUserId());
+        BoardCommentResponse response = boardCommentService.update(commentId, request, userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("댓글 수정 성공", response));
     }
 
-    @Operation(summary = "댓글 삭제", description = "본인 댓글만 삭제할 수 있습니다.")
-    @DeleteMapping("/api/board-comments/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteComment(
-            @Parameter(description = "댓글 ID") @PathVariable Long id,
+    @Operation(summary = "댓글 삭제")
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @Parameter(description = "댓글 ID") @PathVariable Long commentId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
-        boardCommentService.deleteComment(id, userDetails.getUserId());
+        boardCommentService.delete(commentId, userDetails.getUserId());
         return ResponseEntity.ok(ApiResponse.success("댓글 삭제 성공"));
+    }
+
+    @Operation(summary = "게시글 댓글 목록 조회 (부모 + 답글 처음 3개)")
+    @GetMapping("/board/{boardId}")
+    public ResponseEntity<ApiResponse<PageResponse<BoardCommentResponse>>> getCommentsByBoard(
+            @Parameter(description = "게시글 ID") @PathVariable Long boardId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
+        PageResponse<BoardCommentResponse> response = boardCommentService.getCommentsByBoard(boardId, PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @Operation(summary = "답글 더보기")
+    @GetMapping("/{parentId}/replies")
+    public ResponseEntity<ApiResponse<PageResponse<BoardCommentResponse>>> getReplies(
+            @Parameter(description = "부모 댓글 ID") @PathVariable Long parentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
+        PageResponse<BoardCommentResponse> response = boardCommentService.getReplies(parentId, PageRequest.of(page, size));
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
