@@ -68,7 +68,7 @@ public class BoardCommentServiceImpl implements BoardCommentService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
-        comment.update(request.content());
+        comment.updateContent(request.content());
         return BoardCommentResponse.from(comment);
     }
 
