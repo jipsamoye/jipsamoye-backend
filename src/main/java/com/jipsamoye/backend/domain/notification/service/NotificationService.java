@@ -7,7 +7,8 @@ import com.jipsamoye.backend.global.response.PageResponse;
 
 public interface NotificationService {
 
-    void send(User receiver, User sender, NotificationType type, Long targetId, String message);
+    void send(User receiver, User sender, NotificationType type,
+              Long targetId, Long relatedPostId, String message);
 
     PageResponse<NotificationResponse> getNotifications(Long userId, int page, int size);
 

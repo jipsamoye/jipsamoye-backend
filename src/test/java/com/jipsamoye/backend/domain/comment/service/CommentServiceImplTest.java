@@ -106,6 +106,7 @@ class CommentServiceImplTest {
         assertThat(event.getType()).isEqualTo(NotificationType.PET_POST_COMMENT_REPLY);
         assertThat(event.getReceiver().getId()).isEqualTo(2L);
         assertThat(event.getSender().getId()).isEqualTo(3L);
+        assertThat(event.getRelatedPostId()).isEqualTo(10L);
     }
 
     @Test

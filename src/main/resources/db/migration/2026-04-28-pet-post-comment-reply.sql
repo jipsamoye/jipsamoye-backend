@@ -26,3 +26,8 @@ SET comment_count = (
     WHERE c.pet_post_id = p.id
       AND c.deleted_at IS NULL
 );
+
+-- ⑤ notifications 테이블에 related_post_id 추가
+-- 알림 클릭 시 게시글 딥링크용. dedup 키(target_id)와 분리.
+ALTER TABLE notifications
+    ADD COLUMN related_post_id BIGINT NULL;

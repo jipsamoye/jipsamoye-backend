@@ -19,6 +19,7 @@ public class NotificationEventListener {
     public void handleNotification(NotificationEvent event) {
         notificationService.send(
                 event.getReceiver(), event.getSender(),
-                event.getType(), event.getTargetId(), event.getMessage());
+                event.getType(), event.getTargetId(),
+                event.getRelatedPostId(), event.getMessage());
     }
 }

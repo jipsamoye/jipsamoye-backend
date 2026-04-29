@@ -85,6 +85,7 @@ public class CommentServiceImpl implements CommentService {
                     notifyTarget, user,
                     NotificationType.PET_POST_COMMENT_REPLY,
                     saved.getId(),
+                    petPost.getId(),
                     user.getNickname() + "님이 회원님의 댓글에 답글을 남겼습니다"
             ));
         }

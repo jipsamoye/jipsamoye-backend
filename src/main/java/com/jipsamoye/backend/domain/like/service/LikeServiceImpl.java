@@ -55,6 +55,7 @@ public class LikeServiceImpl implements LikeService {
             eventPublisher.publishEvent(new NotificationEvent(
                     petPost.getUser(), user,
                     NotificationType.LIKE, postId,
+                    postId,
                     user.getNickname() + "님이 게시글에 좋아요를 눌렀습니다"));
             return true;
         }
