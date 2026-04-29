@@ -47,6 +47,9 @@ public class PetPost extends BaseEntity {
     @Column(nullable = false)
     private int likeCount = 0;
 
+    @Column(nullable = false)
+    private int commentCount = 0;
+
     @Builder
     public PetPost(User user, String title, String content, List<String> imageUrls) {
         this.user = user;

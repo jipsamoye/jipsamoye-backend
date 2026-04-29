@@ -45,6 +45,14 @@ public interface PetPostRepository extends JpaRepository<PetPost, Long> {
     @Query("UPDATE PetPost p SET p.likeCount = p.likeCount + :value WHERE p.id = :id")
     void updateLikeCount(@Param("id") Long id, @Param("value") int value);
 
+    @Modifying
+    @Query("UPDATE PetPost p SET p.commentCount = p.commentCount + 1 WHERE p.id = :id")
+    void incrementCommentCount(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE PetPost p SET p.commentCount = p.commentCount - 1 WHERE p.id = :id AND p.commentCount > 0")
+    void decrementCommentCount(@Param("id") Long id);
+
     @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM PetPost p WHERE p.user.id = :userId")
     long sumLikeCountByUserId(@Param("userId") Long userId);
 

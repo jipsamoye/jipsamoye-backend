@@ -4,17 +4,17 @@ import com.jipsamoye.backend.domain.comment.dto.request.CommentCreateRequest;
 import com.jipsamoye.backend.domain.comment.dto.request.CommentUpdateRequest;
 import com.jipsamoye.backend.domain.comment.dto.response.CommentResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
+import org.springframework.data.domain.Pageable;
 
 public interface CommentService {
 
-    CommentResponse createComment(Long postId, CommentCreateRequest request, Long userId);
+    CommentResponse create(CommentCreateRequest request, Long userId);
 
-    PageResponse<CommentResponse> getComments(Long postId, int page, int size);
+    CommentResponse update(Long commentId, CommentUpdateRequest request, Long userId);
 
-    CommentResponse updateComment(Long commentId, CommentUpdateRequest request, Long userId);
+    void delete(Long commentId, Long userId);
 
-    /**
-     * 댓글 삭제 — soft delete, 본인 댓글만 가능
-     */
-    void deleteComment(Long commentId, Long userId);
+    PageResponse<CommentResponse> getCommentsByPost(Long postId, Pageable pageable);
+
+    PageResponse<CommentResponse> getReplies(Long parentId, Pageable pageable);
 }

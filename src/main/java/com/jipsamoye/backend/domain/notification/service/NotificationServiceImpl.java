@@ -27,7 +27,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional
-    public void send(User receiver, User sender, NotificationType type, Long targetId, String message) {
+    public void send(User receiver, User sender, NotificationType type,
+                     Long targetId, Long relatedPostId, String message) {
         if (receiver.getId().equals(sender.getId())) return;
         if (notificationRepository.existsBySenderAndReceiverAndTargetIdAndType(sender, receiver, targetId, type)) return;
 
@@ -36,6 +37,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .sender(sender)
                 .type(type)
                 .targetId(targetId)
+                .relatedPostId(relatedPostId)
                 .message(message)
                 .build();
 
