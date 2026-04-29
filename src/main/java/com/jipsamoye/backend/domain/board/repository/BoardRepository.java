@@ -29,6 +29,14 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     void updateCommentCount(@Param("id") Long id, @Param("value") int value);
 
     @Modifying
+    @Query("UPDATE Board b SET b.commentCount = b.commentCount + 1 WHERE b.id = :id")
+    void incrementCommentCount(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE Board b SET b.commentCount = b.commentCount - 1 WHERE b.id = :id AND b.commentCount > 0")
+    void decrementCommentCount(@Param("id") Long id);
+
+    @Modifying
     @Query("UPDATE Board b SET b.deletedAt = CURRENT_TIMESTAMP WHERE b.user = :user AND b.deletedAt IS NULL")
     void softDeleteAllByUser(@Param("user") User user);
 
