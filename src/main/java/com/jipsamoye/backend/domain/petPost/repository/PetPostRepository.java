@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -55,6 +56,10 @@ public interface PetPostRepository extends JpaRepository<PetPost, Long> {
 
     @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM PetPost p WHERE p.user.id = :userId")
     long sumLikeCountByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT p.user.id, COALESCE(SUM(p.likeCount), 0) " +
+           "FROM PetPost p WHERE p.user.id IN :userIds GROUP BY p.user.id")
+    List<Object[]> sumLikeCountGroupedByUserIds(@Param("userIds") Collection<Long> userIds);
 
     @Query("SELECT p FROM PetPost p " +
            "WHERE p.user.id IN (SELECT f.following.id FROM Follow f WHERE f.follower.id = :followerId) " +

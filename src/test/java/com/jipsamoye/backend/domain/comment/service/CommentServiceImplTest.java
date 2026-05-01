@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.domain.comment.service;
 
 import com.jipsamoye.backend.domain.comment.dto.request.CommentCreateRequest;
+import com.jipsamoye.backend.domain.comment.dto.request.CommentUpdateRequest;
 import com.jipsamoye.backend.domain.comment.dto.response.CommentResponse;
 import com.jipsamoye.backend.domain.comment.entity.Comment;
 import com.jipsamoye.backend.domain.comment.repository.CommentRepository;
@@ -27,12 +28,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,6 +62,12 @@ class CommentServiceImplTest {
         return u;
     }
 
+    private User deletedUser(long id, String nickname) {
+        User u = user(id, nickname);
+        ReflectionTestUtils.setField(u, "deletedAt", LocalDateTime.now());
+        return u;
+    }
+
     private PetPost petPost(long id, User owner) {
         PetPost p = PetPost.builder()
                 .user(owner)
@@ -77,7 +88,30 @@ class CommentServiceImplTest {
         return c;
     }
 
-    // ── Task 7: create 테스트 ────────────────────────────────
+    // ── create 테스트 ────────────────────────────────
+
+    @Test
+    @DisplayName("댓글 작성 시 응답에 작성자의 총 좋아요 수가 포함된다")
+    void create_includesAuthorTotalLikeCount() {
+        User author = user(1L, "작성자");
+        PetPost post = petPost(10L, author);
+
+        when(petPostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(commentRepository.save(any())).thenAnswer(inv -> {
+            Comment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 20L);
+            return c;
+        });
+        when(commentRepository.countByParentAndDeletedAtIsNull(any())).thenReturn(0L);
+        when(petPostRepository.sumLikeCountByUserId(1L)).thenReturn(42L);
+
+        CommentCreateRequest req = new CommentCreateRequest(10L, null, null, "댓글 내용");
+        CommentResponse response = commentService.create(req, 1L);
+
+        assertThat(response.authorTotalLikeCount()).isEqualTo(42L);
+        verify(petPostRepository).sumLikeCountByUserId(1L);
+    }
 
     @Test
     @DisplayName("답글 작성 시 부모 작성자에게 알림 이벤트가 발행된다")
@@ -140,7 +174,6 @@ class CommentServiceImplTest {
         PetPost post = petPost(10L, postOwner);
 
         Comment root = parentComment(20L, rootAuthor, post);
-        // replyAuthor 본인의 답글에 본인이 또 답글을 다는 케이스
         Comment reply = Comment.builder()
                 .petPost(post).user(replyAuthor).content("답글").parent(root).build();
         ReflectionTestUtils.setField(reply, "id", 21L);
@@ -196,10 +229,9 @@ class CommentServiceImplTest {
         assertThat(saved.getParent()).isEqualTo(root);
         assertThat(saved.getMentionedUser()).isEqualTo(replyAuthor);
 
-        // 알림은 root 작성자(A)가 아닌 원 답글 작성자(B)에게
         ArgumentCaptor<NotificationEvent> eventCaptor = ArgumentCaptor.forClass(NotificationEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().getReceiver().getId()).isEqualTo(3L); // replyAuthor = B
+        assertThat(eventCaptor.getValue().getReceiver().getId()).isEqualTo(3L);
     }
 
     @Test
@@ -222,7 +254,27 @@ class CommentServiceImplTest {
         verify(commentRepository, never()).save(any());
     }
 
-    // ── Task 8: delete 테스트 ────────────────────────────────
+    // ── update 테스트 ────────────────────────────────
+
+    @Test
+    @DisplayName("댓글 수정 시 응답에 작성자의 총 좋아요 수가 포함된다")
+    void update_includesAuthorTotalLikeCount() {
+        User author = user(1L, "작성자");
+        PetPost post = petPost(10L, author);
+        Comment comment = parentComment(20L, author, post);
+
+        when(commentRepository.findById(20L)).thenReturn(Optional.of(comment));
+        when(commentRepository.countByParentAndDeletedAtIsNull(comment)).thenReturn(0L);
+        when(petPostRepository.sumLikeCountByUserId(1L)).thenReturn(15L);
+
+        CommentUpdateRequest req = new CommentUpdateRequest("수정된 내용");
+        CommentResponse response = commentService.update(20L, req, 1L);
+
+        assertThat(response.authorTotalLikeCount()).isEqualTo(15L);
+        verify(petPostRepository).sumLikeCountByUserId(1L);
+    }
+
+    // ── delete 테스트 ────────────────────────────────
 
     @Test
     @DisplayName("답글 없는 부모 댓글 삭제 시 soft delete되고 commentCount가 1 감소한다")
@@ -300,7 +352,7 @@ class CommentServiceImplTest {
         verify(petPostRepository, never()).decrementCommentCount(any());
     }
 
-    // ── Task 9: getCommentsByPost / getReplies 테스트 ────────
+    // ── getCommentsByPost 테스트 ────────────────────────────────
 
     @Test
     @DisplayName("게시글 댓글 조회 시 부모에 답글과 replyCount가 올바르게 첨부된다")
@@ -324,6 +376,8 @@ class CommentServiceImplTest {
                 .thenReturn(List.<Object[]>of(new Object[]{20L, 2L}));
         when(commentRepository.findTop3RepliesByParentIds(List.of(20L, 21L)))
                 .thenReturn(List.of(reply1, reply2));
+        when(petPostRepository.sumLikeCountGroupedByUserIds(anyCollection()))
+                .thenReturn(List.<Object[]>of(new Object[]{1L, 7L}));
 
         PageResponse<CommentResponse> result = commentService.getCommentsByPost(10L, pageable);
 
@@ -331,13 +385,87 @@ class CommentServiceImplTest {
         CommentResponse first = result.getContent().get(0);
         assertThat(first.replyCount()).isEqualTo(2L);
         assertThat(first.replies()).hasSize(2);
+        assertThat(first.authorTotalLikeCount()).isEqualTo(7L);
         CommentResponse second = result.getContent().get(1);
         assertThat(second.replyCount()).isEqualTo(0L);
         assertThat(second.replies()).isEmpty();
+        assertThat(second.authorTotalLikeCount()).isEqualTo(7L);
     }
 
     @Test
-    @DisplayName("답글 더보기 조회 시 오래된 순 단일 페이지가 반환된다")
+    @DisplayName("getCommentsByPost - 부모·답글 작성자가 섞여도 batch 쿼리가 정확히 1회 호출된다")
+    void getCommentsByPost_batchLikeQueryCalledOnce() {
+        User author1 = user(1L, "작성자1");
+        User author2 = user(2L, "작성자2");
+        PetPost post = petPost(10L, author1);
+
+        Comment parent = parentComment(20L, author1, post);
+        Comment reply = Comment.builder().petPost(post).user(author2).content("답글").parent(parent).build();
+        ReflectionTestUtils.setField(reply, "id", 30L);
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(commentRepository.findParentsByPetPostId(10L, pageable))
+                .thenReturn(new PageImpl<>(List.of(parent)));
+        when(commentRepository.countRepliesGroupedByParentIds(List.of(20L)))
+                .thenReturn(List.<Object[]>of(new Object[]{20L, 1L}));
+        when(commentRepository.findTop3RepliesByParentIds(List.of(20L)))
+                .thenReturn(List.of(reply));
+        when(petPostRepository.sumLikeCountGroupedByUserIds(anyCollection()))
+                .thenReturn(List.<Object[]>of(new Object[]{1L, 3L}, new Object[]{2L, 5L}));
+
+        PageResponse<CommentResponse> result = commentService.getCommentsByPost(10L, pageable);
+
+        verify(petPostRepository, times(1)).sumLikeCountGroupedByUserIds(anyCollection());
+        assertThat(result.getContent().get(0).authorTotalLikeCount()).isEqualTo(3L);
+        assertThat(result.getContent().get(0).replies().get(0).authorTotalLikeCount()).isEqualTo(5L);
+    }
+
+    @Test
+    @DisplayName("getCommentsByPost - 부모가 0건이면 batch 쿼리가 호출되지 않는다")
+    void getCommentsByPost_emptyParents_noBatchQuery() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(commentRepository.findParentsByPetPostId(10L, pageable))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        commentService.getCommentsByPost(10L, pageable);
+
+        verify(petPostRepository, never()).sumLikeCountGroupedByUserIds(anyCollection());
+    }
+
+    @Test
+    @DisplayName("getCommentsByPost - 탈퇴한 작성자의 댓글은 authorTotalLikeCount가 0이다")
+    void getCommentsByPost_deletedAuthor_likeCountIsZero() {
+        User deletedAuthor = deletedUser(1L, "탈퇴자");
+        User activeAuthor = user(2L, "활성유저");
+        PetPost post = petPost(10L, activeAuthor);
+
+        Comment parent = parentComment(20L, deletedAuthor, post);
+        Comment reply = Comment.builder().petPost(post).user(activeAuthor).content("답글").parent(parent).build();
+        ReflectionTestUtils.setField(reply, "id", 30L);
+
+        Pageable pageable = PageRequest.of(0, 20);
+
+        when(commentRepository.findParentsByPetPostId(10L, pageable))
+                .thenReturn(new PageImpl<>(List.of(parent)));
+        when(commentRepository.countRepliesGroupedByParentIds(List.of(20L)))
+                .thenReturn(List.of());
+        when(commentRepository.findTop3RepliesByParentIds(List.of(20L)))
+                .thenReturn(List.of(reply));
+        when(petPostRepository.sumLikeCountGroupedByUserIds(anyCollection()))
+                .thenReturn(List.<Object[]>of(new Object[]{2L, 99L}));
+
+        PageResponse<CommentResponse> result = commentService.getCommentsByPost(10L, pageable);
+
+        CommentResponse parentResponse = result.getContent().get(0);
+        assertThat(parentResponse.authorTotalLikeCount()).isEqualTo(0L);
+        assertThat(parentResponse.replies().get(0).authorTotalLikeCount()).isEqualTo(99L);
+    }
+
+    // ── getReplies 테스트 ────────────────────────────────
+
+    @Test
+    @DisplayName("답글 더보기 조회 시 오래된 순 단일 페이지가 반환되고 authorTotalLikeCount가 포함된다")
     void getReplies_returnsOldestFirstPage() {
         User author = user(1L, "작성자");
         PetPost post = petPost(10L, author);
@@ -349,10 +477,13 @@ class CommentServiceImplTest {
         Pageable pageable = PageRequest.of(0, 20);
         when(commentRepository.findRepliesByParentId(20L, pageable))
                 .thenReturn(new PageImpl<>(List.of(reply)));
+        when(petPostRepository.sumLikeCountGroupedByUserIds(anyCollection()))
+                .thenReturn(List.<Object[]>of(new Object[]{1L, 8L}));
 
         PageResponse<CommentResponse> result = commentService.getReplies(20L, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).id()).isEqualTo(30L);
+        assertThat(result.getContent().get(0).authorTotalLikeCount()).isEqualTo(8L);
     }
 }

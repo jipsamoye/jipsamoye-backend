@@ -21,8 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -91,7 +93,8 @@ public class CommentServiceImpl implements CommentService {
         }
 
         long replyCount = parent == null ? commentRepository.countByParentAndDeletedAtIsNull(saved) : 0L;
-        return CommentResponse.from(saved, replyCount, List.of());
+        long authorTotalLikeCount = petPostRepository.sumLikeCountByUserId(userId);
+        return CommentResponse.from(saved, replyCount, List.of(), authorTotalLikeCount);
     }
 
     @Override
@@ -110,7 +113,8 @@ public class CommentServiceImpl implements CommentService {
         comment.updateContent(request.content());
 
         long replyCount = comment.isReply() ? 0L : commentRepository.countByParentAndDeletedAtIsNull(comment);
-        return CommentResponse.from(comment, replyCount, List.of());
+        long authorTotalLikeCount = petPostRepository.sumLikeCountByUserId(comment.getUser().getId());
+        return CommentResponse.from(comment, replyCount, List.of(), authorTotalLikeCount);
     }
 
     @Override
@@ -148,7 +152,7 @@ public class CommentServiceImpl implements CommentService {
         Page<Comment> parents = commentRepository.findParentsByPetPostId(postId, pageable);
 
         if (parents.isEmpty()) {
-            return PageResponse.from(parents.map(p -> CommentResponse.from(p, 0L, List.of())));
+            return PageResponse.from(parents.map(p -> CommentResponse.from(p, 0L, List.of(), 0L)));
         }
 
         List<Long> parentIds = parents.getContent().stream()
@@ -164,12 +168,29 @@ public class CommentServiceImpl implements CommentService {
         Map<Long, List<Comment>> repliesMap = commentRepository.findTop3RepliesByParentIds(parentIds).stream()
                 .collect(Collectors.groupingBy(r -> r.getParent().getId()));
 
+        Set<Long> authorIds = new HashSet<>();
+        parents.getContent().forEach(p -> {
+            if (!p.getUser().isDeleted()) authorIds.add(p.getUser().getId());
+        });
+        repliesMap.values().forEach(list -> list.forEach(r -> {
+            if (!r.getUser().isDeleted()) authorIds.add(r.getUser().getId());
+        }));
+
+        Map<Long, Long> likeMap = authorIds.isEmpty()
+                ? Map.of()
+                : petPostRepository.sumLikeCountGroupedByUserIds(authorIds).stream()
+                        .collect(Collectors.toMap(
+                                row -> ((Number) row[0]).longValue(),
+                                row -> ((Number) row[1]).longValue()
+                        ));
+
         Page<CommentResponse> result = parents.map(p -> {
             long replyCount = countMap.getOrDefault(p.getId(), 0L);
+            long authorLikeCount = p.getUser().isDeleted() ? 0L : likeMap.getOrDefault(p.getUser().getId(), 0L);
             List<CommentResponse> replies = repliesMap.getOrDefault(p.getId(), List.of()).stream()
-                    .map(CommentResponse::ofReply)
+                    .map(r -> CommentResponse.ofReply(r, r.getUser().isDeleted() ? 0L : likeMap.getOrDefault(r.getUser().getId(), 0L)))
                     .collect(Collectors.toList());
-            return CommentResponse.from(p, replyCount, replies);
+            return CommentResponse.from(p, replyCount, replies, authorLikeCount);
         });
 
         return PageResponse.from(result);
@@ -177,8 +198,24 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public PageResponse<CommentResponse> getReplies(Long parentId, Pageable pageable) {
-        Page<CommentResponse> page = commentRepository.findRepliesByParentId(parentId, pageable)
-                .map(CommentResponse::ofReply);
+        Page<Comment> replies = commentRepository.findRepliesByParentId(parentId, pageable);
+
+        Set<Long> authorIds = replies.getContent().stream()
+                .filter(r -> !r.getUser().isDeleted())
+                .map(r -> r.getUser().getId())
+                .collect(Collectors.toSet());
+
+        Map<Long, Long> likeMap = authorIds.isEmpty()
+                ? Map.of()
+                : petPostRepository.sumLikeCountGroupedByUserIds(authorIds).stream()
+                        .collect(Collectors.toMap(
+                                row -> ((Number) row[0]).longValue(),
+                                row -> ((Number) row[1]).longValue()
+                        ));
+
+        Page<CommentResponse> page = replies.map(r ->
+                CommentResponse.ofReply(r, r.getUser().isDeleted() ? 0L : likeMap.getOrDefault(r.getUser().getId(), 0L))
+        );
         return PageResponse.from(page);
     }
 }
