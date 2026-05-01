@@ -27,7 +27,7 @@ public class Notification extends BaseEntity {
     private User sender;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private NotificationType type;
 
     @Column(nullable = false)
