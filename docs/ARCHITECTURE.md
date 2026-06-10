@@ -37,7 +37,7 @@ Spring Boot (Docker)
 | 언어 | Java | 17 |
 | 프레임워크 | Spring Boot | 3.5.13 |
 | ORM | Spring Data JPA (Hibernate) | - |
-| 인증 | Spring Security + OAuth2 (세션 기반) | - |
+| 인증 | Spring Security + 세션 기반 인증 (네이버 OAuth2는 RestClient 직접 연동) | - |
 | API 문서 | springdoc-openapi (Swagger UI) | - |
 | 스토리지 | AWS S3 + Cloudflare CDN | - |
 | 데이터베이스 | MySQL | 8.0 |
@@ -51,7 +51,7 @@ Spring Boot (Docker)
 
 | 도메인 | 역할 | 주요 엔티티 |
 |--------|------|------------|
-| `auth` | 소셜 로그인, 세션 관리, 토큰 처리 | - |
+| `auth` | 소셜 로그인(네이버 OAuth2 RestClient 직접 연동), 세션 관리 | - |
 | `user` | 회원 정보 조회 · 수정, 프로필 | `User` |
 | `petPost` | 반려동물 게시글 CRUD, 피드, 기간별 좋아요 랭킹 | `PetPost` |
 | `comment` | 게시글 댓글 CRUD | `Comment` |
@@ -94,6 +94,8 @@ src/main/java/com/jipsamoye/
 │       ├── dto/
 │       │   ├── request/
 │       │   └── response/
+│       ├── client/                # 외부 API 클라이언트 (auth 도메인: NaverApiClient)
+│       │   └── dto/response/      # 외부 API 응답 DTO
 │       └── event/                 # 도메인 이벤트 (필요 시)
 │
 └── global/

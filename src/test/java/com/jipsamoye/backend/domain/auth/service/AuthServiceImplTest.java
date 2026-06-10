@@ -1,5 +1,10 @@
 package com.jipsamoye.backend.domain.auth.service;
 
+import com.jipsamoye.backend.domain.auth.client.NaverApiClient;
+import com.jipsamoye.backend.domain.auth.client.dto.response.NaverProfileResponse;
+import com.jipsamoye.backend.domain.auth.client.dto.response.NaverTokenResponse;
+import com.jipsamoye.backend.domain.auth.dto.request.NaverLoginRequest;
+import com.jipsamoye.backend.domain.auth.dto.response.NaverLoginResponse;
 import com.jipsamoye.backend.domain.comment.repository.CommentRepository;
 import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
@@ -8,11 +13,14 @@ import com.jipsamoye.backend.domain.user.entity.Provider;
 import com.jipsamoye.backend.domain.user.entity.Role;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
+import com.jipsamoye.backend.global.code.ErrorCode;
+import com.jipsamoye.backend.global.exception.BusinessException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
@@ -24,10 +32,12 @@ import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +51,7 @@ class AuthServiceImplTest {
     private HttpSession httpSession;
     private HttpServletResponse httpServletResponse;
     private ServerProperties serverProperties;
+    private NaverApiClient naverApiClient;
 
     private AuthServiceImpl authService;
 
@@ -53,6 +64,7 @@ class AuthServiceImplTest {
         followRepository = mock(FollowRepository.class);
         httpSession = mock(HttpSession.class);
         httpServletResponse = mock(HttpServletResponse.class);
+        naverApiClient = mock(NaverApiClient.class);
 
         serverProperties = new ServerProperties();
         serverProperties.getServlet().getSession().setTimeout(Duration.ofHours(2));
@@ -67,7 +79,8 @@ class AuthServiceImplTest {
                 followRepository,
                 httpSession,
                 httpServletResponse,
-                serverProperties
+                serverProperties,
+                naverApiClient
         );
     }
 
@@ -75,6 +88,10 @@ class AuthServiceImplTest {
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 기존 게스트 테스트 (issueSession 추출 후 동작 보존 확인)
+    // ──────────────────────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("createGuest - 둘러보기 세션 생성 후 has_session 힌트 쿠키를 session cookie로 발급한다")
@@ -156,5 +173,240 @@ class AuthServiceImplTest {
         authService.getMe(2L);
 
         verify(httpServletResponse, never()).addHeader(eq(HttpHeaders.SET_COOKIE), any(String.class));
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 네이버 로그인 테스트
+    // ──────────────────────────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("naverLogin")
+    class NaverLoginTest {
+
+        private static final String ACCESS_TOKEN = "test-access-token";
+        private static final String PROVIDER_ID = "naver-user-123";
+
+        private NaverTokenResponse tokenResponse() {
+            return new NaverTokenResponse(ACCESS_TOKEN, "refresh", "bearer", "3600", null, null);
+        }
+
+        private NaverProfileResponse profileResponse(String nickname, String email, String profileImage) {
+            return new NaverProfileResponse("00", "success",
+                    new NaverProfileResponse.NaverProfile(PROVIDER_ID, nickname, email, profileImage));
+        }
+
+        @Test
+        @DisplayName("신규 유저 가입 후 세션 발급 — provider=NAVER, role=USER, isNewUser=true, has_session 쿠키 발급")
+        void newUser_registersAndIssuesSession() {
+            when(naverApiClient.exchangeToken("code", "state")).thenReturn(tokenResponse());
+            when(naverApiClient.getProfile(ACCESS_TOKEN))
+                    .thenReturn(profileResponse("테스트유저", "test@naver.com", "https://img.url"));
+            when(userRepository.findByProviderAndProviderIdAndDeletedAtIsNull(Provider.NAVER, PROVIDER_ID))
+                    .thenReturn(Optional.empty());
+            when(userRepository.existsByNickname("테스트유저")).thenReturn(false);
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User u = inv.getArgument(0);
+                ReflectionTestUtils.setField(u, "id", 10L);
+                return u;
+            });
+
+            NaverLoginResponse result = authService.naverLogin(new NaverLoginRequest("code", "state"));
+
+            assertThat(result.isNewUser()).isTrue();
+            assertThat(result.user()).isNotNull();
+
+            // 신규 가입자는 카운트 조회 없이 0을 반환해야 한다
+            assertThat(result.user().postCount()).isEqualTo(0L);
+            assertThat(result.user().followerCount()).isEqualTo(0L);
+            assertThat(result.user().followingCount()).isEqualTo(0L);
+
+            ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(userCaptor.capture());
+            User saved = userCaptor.getValue();
+            assertThat(saved.getProvider()).isEqualTo(Provider.NAVER);
+            assertThat(saved.getProviderId()).isEqualTo(PROVIDER_ID);
+            assertThat(saved.getRole()).isEqualTo(Role.USER);
+            assertThat(saved.getEmail()).isEqualTo("test@naver.com");
+            assertThat(saved.getProfileImageUrl()).isEqualTo("https://img.url");
+
+            // SecurityContext 인증 설정 확인
+            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+
+            // has_session 쿠키 발급 확인
+            ArgumentCaptor<String> cookieCaptor = ArgumentCaptor.forClass(String.class);
+            verify(httpServletResponse).addHeader(eq(HttpHeaders.SET_COOKIE), cookieCaptor.capture());
+            assertThat(cookieCaptor.getValue()).startsWith("has_session=1");
+        }
+
+        @Test
+        @DisplayName("기존 유저는 저장 없이 로그인 — isNewUser=false, 세션 발급됨")
+        void existingUser_loginWithoutSave() {
+            User existing = User.builder()
+                    .nickname("기존유저")
+                    .email("existing@naver.com")
+                    .provider(Provider.NAVER)
+                    .providerId(PROVIDER_ID)
+                    .role(Role.USER)
+                    .build();
+            ReflectionTestUtils.setField(existing, "id", 20L);
+
+            when(naverApiClient.exchangeToken("code", "state")).thenReturn(tokenResponse());
+            when(naverApiClient.getProfile(ACCESS_TOKEN))
+                    .thenReturn(profileResponse("기존유저", "existing@naver.com", null));
+            when(userRepository.findByProviderAndProviderIdAndDeletedAtIsNull(Provider.NAVER, PROVIDER_ID))
+                    .thenReturn(Optional.of(existing));
+            when(petPostRepository.countByUser(existing)).thenReturn(3L);
+            when(followRepository.countByFollowing(existing)).thenReturn(2L);
+            when(followRepository.countByFollower(existing)).thenReturn(1L);
+
+            NaverLoginResponse result = authService.naverLogin(new NaverLoginRequest("code", "state"));
+
+            assertThat(result.isNewUser()).isFalse();
+            verify(userRepository, never()).save(any());
+
+            // 실제 카운트가 응답에 반영되는지 검증
+            assertThat(result.user().postCount()).isEqualTo(3L);
+            assertThat(result.user().followerCount()).isEqualTo(2L);
+            assertThat(result.user().followingCount()).isEqualTo(1L);
+
+            // 세션 발급 확인
+            ArgumentCaptor<String> cookieCaptor = ArgumentCaptor.forClass(String.class);
+            verify(httpServletResponse).addHeader(eq(HttpHeaders.SET_COOKIE), cookieCaptor.capture());
+            assertThat(cookieCaptor.getValue()).startsWith("has_session=1");
+        }
+
+        @Test
+        @DisplayName("네이버 닉네임 사용 가능 시 그대로 사용")
+        void naverNickname_usedDirectly() {
+            when(naverApiClient.exchangeToken("code", "state")).thenReturn(tokenResponse());
+            when(naverApiClient.getProfile(ACCESS_TOKEN))
+                    .thenReturn(profileResponse("짧은닉", "user@naver.com", null));
+            when(userRepository.findByProviderAndProviderIdAndDeletedAtIsNull(Provider.NAVER, PROVIDER_ID))
+                    .thenReturn(Optional.empty());
+            when(userRepository.existsByNickname("짧은닉")).thenReturn(false);
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User u = inv.getArgument(0);
+                ReflectionTestUtils.setField(u, "id", 11L);
+                return u;
+            });
+
+            authService.naverLogin(new NaverLoginRequest("code", "state"));
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+            assertThat(captor.getValue().getNickname()).isEqualTo("짧은닉");
+        }
+
+        @Test
+        @DisplayName("닉네임 중복 시 '집사' prefix 자동 생성")
+        void duplicateNickname_fallsBackToAutoGenerated() {
+            when(naverApiClient.exchangeToken("code", "state")).thenReturn(tokenResponse());
+            when(naverApiClient.getProfile(ACCESS_TOKEN))
+                    .thenReturn(profileResponse("중복닉네임", "user@naver.com", null));
+            when(userRepository.findByProviderAndProviderIdAndDeletedAtIsNull(Provider.NAVER, PROVIDER_ID))
+                    .thenReturn(Optional.empty());
+            // 네이버 닉네임은 중복, 첫 번째 자동 생성 닉네임은 사용 가능
+            when(userRepository.existsByNickname("중복닉네임")).thenReturn(true);
+            when(userRepository.existsByNickname(any(String.class)))
+                    .thenAnswer(inv -> {
+                        String name = inv.getArgument(0);
+                        return name.equals("중복닉네임"); // 중복닉네임만 true, 나머지는 false
+                    });
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User u = inv.getArgument(0);
+                ReflectionTestUtils.setField(u, "id", 12L);
+                return u;
+            });
+
+            authService.naverLogin(new NaverLoginRequest("code", "state"));
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+            assertThat(captor.getValue().getNickname()).startsWith("집사");
+        }
+
+        @Test
+        @DisplayName("닉네임 10자 초과 시 10자로 truncate")
+        void longNickname_truncatedTo10() {
+            String longNickname = "12345678901234"; // 14자
+            when(naverApiClient.exchangeToken("code", "state")).thenReturn(tokenResponse());
+            when(naverApiClient.getProfile(ACCESS_TOKEN))
+                    .thenReturn(profileResponse(longNickname, "user@naver.com", null));
+            when(userRepository.findByProviderAndProviderIdAndDeletedAtIsNull(Provider.NAVER, PROVIDER_ID))
+                    .thenReturn(Optional.empty());
+            when(userRepository.existsByNickname("1234567890")).thenReturn(false);
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User u = inv.getArgument(0);
+                ReflectionTestUtils.setField(u, "id", 13L);
+                return u;
+            });
+
+            authService.naverLogin(new NaverLoginRequest("code", "state"));
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+            assertThat(captor.getValue().getNickname()).isEqualTo("1234567890");
+            assertThat(captor.getValue().getNickname()).hasSize(10);
+        }
+
+        @Test
+        @DisplayName("닉네임·이메일 null이면 폴백 — 자동 생성 닉네임 + naver_{id}@jipsamoye.com")
+        void nullNicknameAndEmail_usesFallback() {
+            when(naverApiClient.exchangeToken("code", "state")).thenReturn(tokenResponse());
+            when(naverApiClient.getProfile(ACCESS_TOKEN))
+                    .thenReturn(profileResponse(null, null, null));
+            when(userRepository.findByProviderAndProviderIdAndDeletedAtIsNull(Provider.NAVER, PROVIDER_ID))
+                    .thenReturn(Optional.empty());
+            when(userRepository.existsByNickname(any(String.class))).thenReturn(false);
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User u = inv.getArgument(0);
+                ReflectionTestUtils.setField(u, "id", 14L);
+                return u;
+            });
+
+            authService.naverLogin(new NaverLoginRequest("code", "state"));
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+            assertThat(captor.getValue().getNickname()).startsWith("집사");
+            assertThat(captor.getValue().getEmail()).isEqualTo("naver_" + PROVIDER_ID + "@jipsamoye.com");
+        }
+
+        @Test
+        @DisplayName("토큰 교환 실패 시 예외 전파 — save 없음, 쿠키 발급 없음")
+        void tokenExchangeFailure_propagatesException() {
+            when(naverApiClient.exchangeToken("bad-code", "state"))
+                    .thenThrow(new BusinessException(ErrorCode.NAVER_TOKEN_EXCHANGE_FAILED));
+
+            assertThatThrownBy(() -> authService.naverLogin(new NaverLoginRequest("bad-code", "state")))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                            .isEqualTo(ErrorCode.NAVER_TOKEN_EXCHANGE_FAILED));
+
+            verify(userRepository, never()).save(any());
+            verify(httpServletResponse, never()).addHeader(eq(HttpHeaders.SET_COOKIE), any());
+        }
+
+        @Test
+        @DisplayName("탈퇴 회원은 신규 가입 처리 — findByProviderAndProviderIdAndDeletedAtIsNull은 empty 반환")
+        void withdrawnUser_treatedAsNewUser() {
+            // 탈퇴 회원은 findByProviderAndProviderIdAndDeletedAtIsNull에서 empty 반환
+            when(naverApiClient.exchangeToken("code", "state")).thenReturn(tokenResponse());
+            when(naverApiClient.getProfile(ACCESS_TOKEN))
+                    .thenReturn(profileResponse("탈퇴유저", "withdrawn@naver.com", null));
+            when(userRepository.findByProviderAndProviderIdAndDeletedAtIsNull(Provider.NAVER, PROVIDER_ID))
+                    .thenReturn(Optional.empty()); // 탈퇴 회원 → empty
+            when(userRepository.existsByNickname("탈퇴유저")).thenReturn(false);
+            when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+                User u = inv.getArgument(0);
+                ReflectionTestUtils.setField(u, "id", 15L);
+                return u;
+            });
+
+            NaverLoginResponse result = authService.naverLogin(new NaverLoginRequest("code", "state"));
+
+            assertThat(result.isNewUser()).isTrue();
+            verify(userRepository, times(1)).save(any());
+        }
     }
 }

@@ -15,6 +15,7 @@ public enum ErrorCode {
 
     // 401
     UNAUTHORIZED(401, "UNAUTHORIZED", "로그인이 필요합니다."),
+    NAVER_TOKEN_EXCHANGE_FAILED(401, "NAVER_TOKEN_EXCHANGE_FAILED", "네이버 인증에 실패했습니다. 다시 로그인해주세요."),
 
     // 403
     FORBIDDEN(403, "FORBIDDEN", "권한이 없습니다."),
@@ -42,7 +43,10 @@ public enum ErrorCode {
 
     // 500
     INTERNAL_SERVER_ERROR(500, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."),
-    S3_UPLOAD_ERROR(500, "S3_UPLOAD_ERROR", "이미지 업로드에 실패했습니다.");
+    S3_UPLOAD_ERROR(500, "S3_UPLOAD_ERROR", "이미지 업로드에 실패했습니다."),
+
+    // 502
+    NAVER_API_ERROR(502, "NAVER_API_ERROR", "네이버 API 호출에 실패했습니다.");
 
     private final int status;
     private final String code;
