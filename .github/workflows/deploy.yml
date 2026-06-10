@@ -48,5 +48,7 @@ jobs:
             echo "AWS_SECRET_KEY=${{ secrets.AWS_SECRET_KEY }}" >> .env
             echo "AWS_S3_BUCKET=${{ secrets.AWS_S3_BUCKET }}" >> .env
             echo "DISCORD_WEBHOOK_URL=${{ secrets.DISCORD_WEBHOOK_URL }}" >> .env
+            echo "NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}" >> .env
+            echo "NAVER_CLIENT_SECRET=${{ secrets.NAVER_CLIENT_SECRET }}" >> .env
             chmod +x scripts/deploy.sh
             bash scripts/deploy.sh
