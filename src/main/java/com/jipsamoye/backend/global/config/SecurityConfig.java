@@ -42,8 +42,9 @@ public class SecurityConfig {
                         .requestMatchers(GET, "/api/board-comments/**").permitAll()
                         .requestMatchers(GET, "/api/chat/**").permitAll()
 
-                        // 인증 불필요 — 게스트 로그인
+                        // 인증 불필요 — 게스트 로그인, 네이버 소셜 로그인
                         .requestMatchers(POST, "/api/auth/guest").permitAll()
+                        .requestMatchers(POST, "/api/auth/naver/login").permitAll()
 
                         // 인증 불필요 — Swagger, 헬스체크, WebSocket
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()

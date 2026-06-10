@@ -1,12 +1,12 @@
 # 집사모여 — 품질 현황
 
-> 마지막 업데이트: 2026-04-27
+> 마지막 업데이트: 2026-06-10
 
 ## 도메인별 품질 등급
 
 | 도메인 | 등급 | 테스트 | 비고 |
 |--------|------|--------|------|
-| auth | B | 없음 | 소셜 로그인 + 회원 탈퇴 로직 복잡, 테스트 필요 |
+| auth | A | 있음 | 네이버 소셜 로그인(RestClient 직접 연동) + 게스트 로그인 + 회원 탈퇴. AuthServiceImplTest + NaverApiClientTest 작성 완료 |
 | user | B | 있음 | UserService 테스트 존재 |
 | petPost | B | 있음 | CRUD + 이미지 연동 + 기간별 랭킹. RankingServiceImplTest(단위), PetPostControllerRankingTest(WebMvc) 존재 |
 | comment | B | 없음 | 기본 CRUD |

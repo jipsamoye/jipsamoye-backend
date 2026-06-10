@@ -1,11 +1,14 @@
 package com.jipsamoye.backend.domain.auth.controller;
 
+import com.jipsamoye.backend.domain.auth.dto.request.NaverLoginRequest;
+import com.jipsamoye.backend.domain.auth.dto.response.NaverLoginResponse;
 import com.jipsamoye.backend.domain.auth.service.AuthService;
 import com.jipsamoye.backend.domain.user.dto.response.UserResponse;
 import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +22,18 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Operation(
+            summary = "네이버 소셜 로그인",
+            description = "네이버 인가 코드(code, state)를 받아 토큰 교환 및 프로필 조회 후 세션을 발급합니다. " +
+                    "state CSRF 검증 책임은 프론트엔드에 있으며 백엔드는 state를 토큰 요청에 전달만 합니다."
+    )
+    @PostMapping("/naver/login")
+    public ResponseEntity<ApiResponse<NaverLoginResponse>> naverLogin(
+            @Valid @RequestBody NaverLoginRequest request) {
+        NaverLoginResponse response = authService.naverLogin(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
 
     @Operation(summary = "둘러보기 (임시 계정 생성)", description = "UUID 기반 임시 유저를 생성하고 세션을 발급합니다.")
     @PostMapping("/guest")

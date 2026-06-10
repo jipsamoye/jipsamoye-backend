@@ -14,3 +14,8 @@ cloud:
       secret-key: ${AWS_SECRET_KEY}
     region:
       static: ap-northeast-2
+
+naver:
+  oauth:
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
