@@ -1,26 +1,25 @@
 package com.jipsamoye.backend.domain.user.service;
 
+import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
+import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 import com.jipsamoye.backend.domain.user.dto.response.UserResponse;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
-import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
@@ -67,18 +66,25 @@ class UserServiceImplTest {
         return user;
     }
 
+    private void stubRankingCalls(User user, long userId, long postCount, long followerCount,
+                                  long followingCount, long totalLikes, long moreCount) {
+        when(petPostRepository.countByUser(user)).thenReturn(postCount);
+        when(followRepository.countByFollowing(user)).thenReturn(followerCount);
+        when(followRepository.countByFollower(user)).thenReturn(followingCount);
+        when(petPostRepository.sumLikeCountByUserId(userId)).thenReturn(totalLikes);
+        if (totalLikes > 0) {
+            when(userRepository.countActiveUsersWithMoreLikesThan(totalLikes)).thenReturn(moreCount);
+        }
+    }
+
     @Test
     @DisplayName("getProfile - 좋아요 합계가 가장 높으면 ranking=1, totalLikeCount는 합계")
     void getProfile_topRanker_rankingIsOne() {
         User user = mockActiveUser(1L, "탑유저");
         when(userRepository.findByNickname("탑유저")).thenReturn(Optional.of(user));
-        when(petPostRepository.countByUser(user)).thenReturn(5L);
-        when(followRepository.countByFollowing(user)).thenReturn(10L);
-        when(followRepository.countByFollower(user)).thenReturn(20L);
-        when(petPostRepository.sumLikeCountByUserId(1L)).thenReturn(100L);
-        when(userRepository.countActiveUsersWithMoreLikesThan(100L)).thenReturn(0L);
+        stubRankingCalls(user, 1L, 5L, 10L, 20L, 100L, 0L);
 
-        UserResponse response = userService.getProfile("탑유저");
+        UserResponse response = userService.getProfile("탑유저", null);
 
         assertThat(response.ranking()).isEqualTo(1L);
         assertThat(response.totalLikeCount()).isEqualTo(100L);
@@ -90,13 +96,9 @@ class UserServiceImplTest {
     void getProfile_tieRule_rankingSkipsAfterTies() {
         User user = mockActiveUser(2L, "동률유저");
         when(userRepository.findByNickname("동률유저")).thenReturn(Optional.of(user));
-        when(petPostRepository.countByUser(user)).thenReturn(3L);
-        when(followRepository.countByFollowing(user)).thenReturn(0L);
-        when(followRepository.countByFollower(user)).thenReturn(0L);
-        when(petPostRepository.sumLikeCountByUserId(2L)).thenReturn(50L);
-        when(userRepository.countActiveUsersWithMoreLikesThan(50L)).thenReturn(2L);
+        stubRankingCalls(user, 2L, 3L, 0L, 0L, 50L, 2L);
 
-        UserResponse response = userService.getProfile("동률유저");
+        UserResponse response = userService.getProfile("동률유저", null);
 
         assertThat(response.ranking()).isEqualTo(3L);
         assertThat(response.totalLikeCount()).isEqualTo(50L);
@@ -107,12 +109,9 @@ class UserServiceImplTest {
     void getProfile_zeroLikes_rankingNull() {
         User user = mockActiveUser(3L, "신규유저");
         when(userRepository.findByNickname("신규유저")).thenReturn(Optional.of(user));
-        when(petPostRepository.countByUser(user)).thenReturn(0L);
-        when(followRepository.countByFollowing(user)).thenReturn(0L);
-        when(followRepository.countByFollower(user)).thenReturn(0L);
-        when(petPostRepository.sumLikeCountByUserId(3L)).thenReturn(0L);
+        stubRankingCalls(user, 3L, 0L, 0L, 0L, 0L, 0L);
 
-        UserResponse response = userService.getProfile("신규유저");
+        UserResponse response = userService.getProfile("신규유저", null);
 
         assertThat(response.ranking()).isNull();
         assertThat(response.totalLikeCount()).isEqualTo(0L);
@@ -125,7 +124,68 @@ class UserServiceImplTest {
         when(user.isDeleted()).thenReturn(true);
         when(userRepository.findByNickname("탈퇴유저")).thenReturn(Optional.of(user));
 
-        assertThatThrownBy(() -> userService.getProfile("탈퇴유저"))
+        assertThatThrownBy(() -> userService.getProfile("탈퇴유저", null))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Nested
+    @DisplayName("getProfile isFollowing 필드")
+    class GetProfileIsFollowingTest {
+
+        @Test
+        @DisplayName("비로그인(currentUserId=null)이면 isFollowing=false이고 existsByFollowerAndFollowing 미호출")
+        void getProfile_notLoggedIn_isFollowingFalse() {
+            User target = mockActiveUser(10L, "대상유저");
+            when(userRepository.findByNickname("대상유저")).thenReturn(Optional.of(target));
+            stubRankingCalls(target, 10L, 0L, 0L, 0L, 0L, 0L);
+
+            UserResponse response = userService.getProfile("대상유저", null);
+
+            assertThat(response.isFollowing()).isFalse();
+            verify(followRepository, never()).existsByFollowerAndFollowing(any(), any());
+        }
+
+        @Test
+        @DisplayName("본인 조회(currentUserId == 대상 id)이면 isFollowing=false이고 existsByFollowerAndFollowing 미호출")
+        void getProfile_selfLookup_isFollowingFalse() {
+            User target = mockActiveUser(10L, "대상유저");
+            when(userRepository.findByNickname("대상유저")).thenReturn(Optional.of(target));
+            stubRankingCalls(target, 10L, 0L, 0L, 0L, 0L, 0L);
+
+            UserResponse response = userService.getProfile("대상유저", 10L);
+
+            assertThat(response.isFollowing()).isFalse();
+            verify(followRepository, never()).existsByFollowerAndFollowing(any(), any());
+        }
+
+        @Test
+        @DisplayName("팔로우 중이면 isFollowing=true")
+        void getProfile_following_isFollowingTrue() {
+            User me = mockActiveUser(1L, "나");
+            User target = mockActiveUser(10L, "대상유저");
+            when(userRepository.findByNickname("대상유저")).thenReturn(Optional.of(target));
+            when(userRepository.findById(1L)).thenReturn(Optional.of(me));
+            when(followRepository.existsByFollowerAndFollowing(me, target)).thenReturn(true);
+            stubRankingCalls(target, 10L, 0L, 0L, 0L, 0L, 0L);
+
+            UserResponse response = userService.getProfile("대상유저", 1L);
+
+            assertThat(response.isFollowing()).isTrue();
+        }
+
+        @Test
+        @DisplayName("미팔로우이면 isFollowing=false")
+        void getProfile_notFollowing_isFollowingFalse() {
+            User me = mockActiveUser(1L, "나");
+            User target = mockActiveUser(10L, "대상유저");
+            when(userRepository.findByNickname("대상유저")).thenReturn(Optional.of(target));
+            when(userRepository.findById(1L)).thenReturn(Optional.of(me));
+            when(followRepository.existsByFollowerAndFollowing(me, target)).thenReturn(false);
+            stubRankingCalls(target, 10L, 0L, 0L, 0L, 0L, 0L);
+
+            UserResponse response = userService.getProfile("대상유저", 1L);
+
+            assertThat(response.isFollowing()).isFalse();
+        }
     }
 }

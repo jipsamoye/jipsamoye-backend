@@ -27,8 +27,10 @@ public class UserController {
     @Operation(summary = "프로필 조회", description = "닉네임으로 유저 프로필을 조회합니다.")
     @GetMapping("/{nickname}")
     public ResponseEntity<ApiResponse<UserResponse>> getProfile(
-            @Parameter(description = "유저 닉네임") @PathVariable String nickname) {
-        UserResponse response = userService.getProfile(nickname);
+            @Parameter(description = "유저 닉네임") @PathVariable String nickname,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long currentUserId = userDetails != null ? userDetails.getUserId() : null;
+        UserResponse response = userService.getProfile(nickname, currentUserId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

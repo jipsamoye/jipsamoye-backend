@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public UserResponse getProfile(String nickname) {
+    public UserResponse getProfile(String nickname, Long currentUserId) {
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -42,8 +42,15 @@ public class UserServiceImpl implements UserService {
         long followingCount = followRepository.countByFollower(user);
         RankingResult ranking = calculateRanking(user.getId());
 
+        // 비로그인 또는 본인 조회 시 exists 쿼리 생략
+        boolean isFollowing = currentUserId != null
+                && !currentUserId.equals(user.getId())
+                && userRepository.findById(currentUserId)
+                        .map(me -> followRepository.existsByFollowerAndFollowing(me, user))
+                        .orElse(false);
+
         return UserResponse.of(user, postCount, followerCount, followingCount,
-                ranking.totalLikeCount(), ranking.ranking());
+                ranking.totalLikeCount(), ranking.ranking(), isFollowing);
     }
 
     @Override

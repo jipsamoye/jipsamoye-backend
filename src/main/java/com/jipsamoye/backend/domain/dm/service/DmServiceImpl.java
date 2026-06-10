@@ -4,19 +4,23 @@ import com.jipsamoye.backend.domain.dm.dto.response.DmMessageResponse;
 import com.jipsamoye.backend.domain.dm.dto.response.DmRoomResponse;
 import com.jipsamoye.backend.domain.dm.entity.DmMessage;
 import com.jipsamoye.backend.domain.dm.entity.DmRoom;
+import com.jipsamoye.backend.domain.dm.event.DmMessagesReadEvent;
 import com.jipsamoye.backend.domain.dm.repository.DmMessageRepository;
 import com.jipsamoye.backend.domain.dm.repository.DmRoomRepository;
+import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -27,6 +31,8 @@ public class DmServiceImpl implements DmService {
     private final DmRoomRepository dmRoomRepository;
     private final DmMessageRepository dmMessageRepository;
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public List<DmRoomResponse> getRooms(Long userId) {
@@ -63,6 +69,10 @@ public class DmServiceImpl implements DmService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "자기 자신에게 DM을 보낼 수 없습니다.");
         }
 
+        if (!followRepository.existsByFollowerAndFollowing(user, target)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "팔로우한 사용자에게만 DM을 보낼 수 있습니다.");
+        }
+
         DmRoom room = dmRoomRepository.findByUsers(user, target)
                 .orElseGet(() -> dmRoomRepository.save(DmRoom.builder()
                         .user1(user)
@@ -92,7 +102,10 @@ public class DmServiceImpl implements DmService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        dmMessageRepository.markAllAsRead(room, user);
+        int updated = dmMessageRepository.markAllAsRead(room, user);
+        if (updated > 0) {
+            eventPublisher.publishEvent(new DmMessagesReadEvent(roomId, user.getNickname(), LocalDateTime.now()));
+        }
 
         Page<DmMessageResponse> messagePage = dmMessageRepository
                 .findAllByRoomOrderByCreatedAtDesc(room, PageRequest.of(page, size))

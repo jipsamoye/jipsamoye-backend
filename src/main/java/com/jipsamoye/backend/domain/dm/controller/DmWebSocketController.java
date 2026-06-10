@@ -1,6 +1,7 @@
 package com.jipsamoye.backend.domain.dm.controller;
 
 import com.jipsamoye.backend.domain.dm.dto.request.DmSendRequest;
+import com.jipsamoye.backend.domain.dm.dto.response.DmMessageEvent;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageResponse;
 import com.jipsamoye.backend.domain.dm.service.DmService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class DmWebSocketController {
                 userId, request.roomId(),
                 request.content(), request.imageUrl());
 
-        messagingTemplate.convertAndSend("/sub/dm/room/" + request.roomId(), response);
+        messagingTemplate.convertAndSend("/sub/dm/room/" + request.roomId(),
+                DmMessageEvent.of(response, request.clientMessageId()));
     }
 }
