@@ -23,5 +23,5 @@ public interface DmMessageRepository extends JpaRepository<DmMessage, Long> {
 
     @Modifying
     @Query("UPDATE DmMessage m SET m.readAt = CURRENT_TIMESTAMP WHERE m.room = :room AND m.sender != :user AND m.readAt IS NULL")
-    void markAllAsRead(@Param("room") DmRoom room, @Param("user") User user);
+    int markAllAsRead(@Param("room") DmRoom room, @Param("user") User user);
 }

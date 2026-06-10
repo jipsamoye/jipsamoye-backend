@@ -9,8 +9,9 @@ public interface UserService {
 
     /**
      * 프로필 조회 — 탈퇴한 유저 접근 시 USER_NOT_FOUND(404)
+     * currentUserId가 null이면 비로그인으로 처리 (isFollowing = false)
      */
-    UserResponse getProfile(String nickname);
+    UserResponse getProfile(String nickname, Long currentUserId);
 
     /**
      * 프로필 수정 — 닉네임 변경 시에만 중복 검증
