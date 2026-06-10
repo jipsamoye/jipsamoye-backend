@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -24,6 +25,20 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * MockRestServiceServer를 사용하므로 테스트용 생성자({@link NaverApiClient#NaverApiClient(RestClient, String, String)})를 사용한다.
  */
 class NaverApiClientTest {
+
+    @Test
+    @DisplayName("Spring 컨텍스트에서 NaverApiClient 빈이 정상 생성된다 — @Autowired 생성자 회귀 테스트")
+    void springContextBeanCreation() {
+        new ApplicationContextRunner()
+                .withPropertyValues(
+                        "naver.oauth.client-id=test-id",
+                        "naver.oauth.client-secret=test-secret"
+                )
+                .withBean(RestClient.Builder.class, RestClient::builder)
+                .withUserConfiguration(NaverApiClient.class)
+                .run(context -> assertThat(context).hasSingleBean(NaverApiClient.class));
+    }
+
 
     private MockRestServiceServer mockServer;
     private NaverApiClient naverApiClient;

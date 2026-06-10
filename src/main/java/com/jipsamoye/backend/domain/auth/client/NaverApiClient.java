@@ -4,6 +4,7 @@ import com.jipsamoye.backend.domain.auth.client.dto.response.NaverProfileRespons
 import com.jipsamoye.backend.domain.auth.client.dto.response.NaverTokenResponse;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -34,6 +35,7 @@ public class NaverApiClient {
      * 운영용 생성자 — Spring이 주입하는 {@link RestClient.Builder}에 타임아웃을 설정한다.
      * MockRestServiceServer 테스트에서는 이 생성자를 사용하지 않는다.
      */
+    @Autowired
     public NaverApiClient(
             RestClient.Builder restClientBuilder,
             @Value("${naver.oauth.client-id}") String clientId,
