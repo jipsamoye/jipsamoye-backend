@@ -15,9 +15,10 @@ public record CommentResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         long replyCount,
-        List<CommentResponse> replies
+        List<CommentResponse> replies,
+        long authorTotalLikeCount
 ) {
-    public static CommentResponse from(Comment comment, long replyCount, List<CommentResponse> replies) {
+    public static CommentResponse from(Comment comment, long replyCount, List<CommentResponse> replies, long authorTotalLikeCount) {
         boolean isUserDeleted = comment.getUser().isDeleted();
         String mentionedNickname = comment.getMentionedUser() != null
                 ? (comment.getMentionedUser().isDeleted() ? "탈퇴한 사용자" : comment.getMentionedUser().getNickname())
@@ -32,11 +33,12 @@ public record CommentResponse(
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
                 replyCount,
-                replies
+                replies,
+                isUserDeleted ? 0L : authorTotalLikeCount
         );
     }
 
-    public static CommentResponse ofReply(Comment comment) {
+    public static CommentResponse ofReply(Comment comment, long authorTotalLikeCount) {
         boolean isUserDeleted = comment.getUser().isDeleted();
         String mentionedNickname = comment.getMentionedUser() != null
                 ? (comment.getMentionedUser().isDeleted() ? "탈퇴한 사용자" : comment.getMentionedUser().getNickname())
@@ -51,7 +53,8 @@ public record CommentResponse(
                 comment.getCreatedAt(),
                 comment.getUpdatedAt(),
                 0L,
-                List.of()
+                List.of(),
+                isUserDeleted ? 0L : authorTotalLikeCount
         );
     }
 }
