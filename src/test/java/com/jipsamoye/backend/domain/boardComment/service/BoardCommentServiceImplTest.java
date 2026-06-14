@@ -70,6 +70,81 @@ class BoardCommentServiceImplTest {
     // ── Task 7: create 테스트 ──────────────────────────────
 
     @Test
+    @DisplayName("최상위 댓글 작성 시 게시판 글 작성자에게 BOARD_COMMENT 알림 이벤트가 발행된다")
+    void create_topLevel_publishesBoardCommentNotification() {
+        User boardOwner = user(1L, "게시글작성자");
+        User commenter = user(2L, "댓글작성자");
+        Board b = board(10L, boardOwner);
+
+        when(boardRepository.findById(10L)).thenReturn(Optional.of(b));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(commenter));
+        when(boardCommentRepository.save(any())).thenAnswer(inv -> {
+            BoardComment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 30L);
+            return c;
+        });
+        when(boardCommentRepository.countByParentAndDeletedAtIsNull(any())).thenReturn(0L);
+
+        boardCommentService.create(new BoardCommentCreateRequest(10L, null, null, "댓글"), 2L);
+
+        ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        NotificationEvent event = captor.getValue();
+        assertThat(event.getType()).isEqualTo(NotificationType.BOARD_COMMENT);
+        assertThat(event.getReceiver().getId()).isEqualTo(1L);
+        assertThat(event.getSender().getId()).isEqualTo(2L);
+        assertThat(event.getRelatedPostId()).isEqualTo(10L);
+        assertThat(event.getTargetId()).isEqualTo(30L);
+    }
+
+    @Test
+    @DisplayName("자기 게시글에 자기가 최상위 댓글을 달면 알림 이벤트가 발행되지 않는다")
+    void create_topLevelOnOwnBoard_doesNotPublishEvent() {
+        User author = user(1L, "작성자");
+        Board b = board(10L, author);
+
+        when(boardRepository.findById(10L)).thenReturn(Optional.of(b));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(boardCommentRepository.save(any())).thenAnswer(inv -> {
+            BoardComment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 30L);
+            return c;
+        });
+        when(boardCommentRepository.countByParentAndDeletedAtIsNull(any())).thenReturn(0L);
+
+        boardCommentService.create(new BoardCommentCreateRequest(10L, null, null, "셀프 댓글"), 1L);
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("답글 작성 시 게시판 글 작성자에게는 중복 알림이 가지 않고 부모 작성자에게만 발행된다")
+    void create_reply_doesNotNotifyBoardOwner() {
+        User boardOwner = user(1L, "게시글작성자");
+        User parentAuthor = user(2L, "부모댓글작성자");
+        User replyAuthor = user(3L, "답글작성자");
+        Board b = board(10L, boardOwner);
+        BoardComment parent = parentComment(20L, parentAuthor, b);
+
+        when(boardRepository.findById(10L)).thenReturn(Optional.of(b));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
+        when(boardCommentRepository.findById(20L)).thenReturn(Optional.of(parent));
+        when(boardCommentRepository.save(any())).thenAnswer(inv -> {
+            BoardComment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 30L);
+            return c;
+        });
+
+        boardCommentService.create(new BoardCommentCreateRequest(10L, 20L, null, "답글"), 3L);
+
+        ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(captor.capture());
+        NotificationEvent event = captor.getValue();
+        assertThat(event.getType()).isEqualTo(NotificationType.BOARD_COMMENT_REPLY);
+        assertThat(event.getReceiver().getId()).isEqualTo(2L);
+    }
+
+    @Test
     @DisplayName("답글 작성 시 부모 작성자에게 알림 이벤트가 발행되고 relatedPostId=boardId이다")
     void create_reply_publishesNotificationEvent() {
         User boardOwner = user(1L, "게시글작성자");
