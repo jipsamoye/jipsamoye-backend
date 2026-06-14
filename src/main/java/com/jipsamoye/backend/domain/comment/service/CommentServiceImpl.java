@@ -81,15 +81,31 @@ public class CommentServiceImpl implements CommentService {
         Comment saved = commentRepository.save(comment);
         petPostRepository.incrementCommentCount(request.petPostId());
 
-        User notifyTarget = (mentionedUser != null) ? mentionedUser : (parent != null ? parent.getUser() : null);
-        if (notifyTarget != null && !notifyTarget.getId().equals(userId)) {
-            eventPublisher.publishEvent(new NotificationEvent(
-                    notifyTarget, user,
-                    NotificationType.PET_POST_COMMENT_REPLY,
-                    saved.getId(),
-                    petPost.getId(),
-                    user.getNickname() + "님이 회원님의 댓글에 답글을 남겼습니다"
-            ));
+        // 한 댓글 = 알림 대상 1명 (중복 발송 없음)
+        if (parent == null && mentionedUser == null) {
+            // 최상위 댓글 → 게시글 작성자에게 알림
+            User postOwner = petPost.getUser();
+            if (postOwner != null && !postOwner.getId().equals(userId)) {
+                eventPublisher.publishEvent(new NotificationEvent(
+                        postOwner, user,
+                        NotificationType.PET_POST_COMMENT,
+                        saved.getId(),
+                        petPost.getId(),
+                        user.getNickname() + "님이 회원님의 게시글에 댓글을 남겼습니다"
+                ));
+            }
+        } else {
+            // 답글 → mentionedUser 우선, 없으면 부모 댓글 작성자에게 알림
+            User notifyTarget = (mentionedUser != null) ? mentionedUser : parent.getUser();
+            if (notifyTarget != null && !notifyTarget.getId().equals(userId)) {
+                eventPublisher.publishEvent(new NotificationEvent(
+                        notifyTarget, user,
+                        NotificationType.PET_POST_COMMENT_REPLY,
+                        saved.getId(),
+                        petPost.getId(),
+                        user.getNickname() + "님이 회원님의 댓글에 답글을 남겼습니다"
+                ));
+            }
         }
 
         long replyCount = parent == null ? commentRepository.countByParentAndDeletedAtIsNull(saved) : 0L;

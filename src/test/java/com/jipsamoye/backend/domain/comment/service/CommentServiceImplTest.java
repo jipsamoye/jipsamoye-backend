@@ -114,6 +114,84 @@ class CommentServiceImplTest {
     }
 
     @Test
+    @DisplayName("최상위 댓글 작성 시 게시글 작성자에게 PET_POST_COMMENT 알림 이벤트가 발행된다")
+    void create_topLevel_publishesPostCommentNotification() {
+        User postOwner = user(1L, "게시글작성자");
+        User commenter = user(2L, "댓글작성자");
+        PetPost post = petPost(10L, postOwner);
+
+        when(petPostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(commenter));
+        when(commentRepository.save(any())).thenAnswer(inv -> {
+            Comment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 30L);
+            return c;
+        });
+        when(commentRepository.countByParentAndDeletedAtIsNull(any())).thenReturn(0L);
+
+        CommentCreateRequest req = new CommentCreateRequest(10L, null, null, "댓글 내용");
+        commentService.create(req, 2L);
+
+        ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        NotificationEvent event = captor.getValue();
+        assertThat(event.getType()).isEqualTo(NotificationType.PET_POST_COMMENT);
+        assertThat(event.getReceiver().getId()).isEqualTo(1L);
+        assertThat(event.getSender().getId()).isEqualTo(2L);
+        assertThat(event.getRelatedPostId()).isEqualTo(10L);
+        assertThat(event.getTargetId()).isEqualTo(30L);
+    }
+
+    @Test
+    @DisplayName("자기 게시글에 자기가 최상위 댓글을 달면 알림 이벤트가 발행되지 않는다")
+    void create_topLevelOnOwnPost_doesNotPublishEvent() {
+        User author = user(1L, "작성자");
+        PetPost post = petPost(10L, author);
+
+        when(petPostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
+        when(commentRepository.save(any())).thenAnswer(inv -> {
+            Comment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 30L);
+            return c;
+        });
+        when(commentRepository.countByParentAndDeletedAtIsNull(any())).thenReturn(0L);
+
+        CommentCreateRequest req = new CommentCreateRequest(10L, null, null, "셀프 댓글");
+        commentService.create(req, 1L);
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("답글 작성 시 게시글 작성자에게는 중복 알림이 가지 않고 부모 작성자에게만 발행된다")
+    void create_reply_doesNotNotifyPostOwner() {
+        User postOwner = user(1L, "게시글작성자");
+        User parentAuthor = user(2L, "부모댓글작성자");
+        User replyAuthor = user(3L, "답글작성자");
+        PetPost post = petPost(10L, postOwner);
+        Comment parent = parentComment(20L, parentAuthor, post);
+
+        when(petPostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
+        when(commentRepository.findById(20L)).thenReturn(Optional.of(parent));
+        when(commentRepository.save(any())).thenAnswer(inv -> {
+            Comment c = inv.getArgument(0);
+            ReflectionTestUtils.setField(c, "id", 30L);
+            return c;
+        });
+
+        CommentCreateRequest req = new CommentCreateRequest(10L, 20L, null, "답글 내용");
+        commentService.create(req, 3L);
+
+        ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(captor.capture());
+        NotificationEvent event = captor.getValue();
+        assertThat(event.getType()).isEqualTo(NotificationType.PET_POST_COMMENT_REPLY);
+        assertThat(event.getReceiver().getId()).isEqualTo(2L);
+    }
+
+    @Test
     @DisplayName("답글 작성 시 부모 작성자에게 알림 이벤트가 발행된다")
     void create_reply_publishesNotificationEvent() {
         User postOwner = user(1L, "게시글작성자");
