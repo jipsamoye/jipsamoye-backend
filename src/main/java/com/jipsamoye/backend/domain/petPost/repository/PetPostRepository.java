@@ -4,6 +4,7 @@ import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -37,7 +38,14 @@ public interface PetPostRepository extends JpaRepository<PetPost, Long> {
     @Query("UPDATE PetPost p SET p.deletedAt = CURRENT_TIMESTAMP WHERE p.user = :user AND p.deletedAt IS NULL")
     void softDeleteAllByUser(@Param("user") User user);
 
-    Page<PetPost> findByTitleContaining(String keyword, Pageable pageable);
+    /**
+     * 제목 FULLTEXT(ngram) 구문검색. 무한스크롤이므로 Slice 반환(size+1 조회로 hasNext 판정, COUNT 없음).
+     * 네이티브 쿼리는 @SQLRestriction이 자동 적용되지 않으므로 deleted_at IS NULL을 직접 명시한다.
+     * kw는 서비스 계층에서 BOOLEAN MODE 연산자 제거 후 "정제어" 형태(구문검색)로 감싸서 전달된다.
+     */
+    @Query(value = "SELECT * FROM pet_post WHERE MATCH(title) AGAINST(:kw IN BOOLEAN MODE) "
+            + "AND deleted_at IS NULL ORDER BY created_at DESC, id DESC", nativeQuery = true)
+    Slice<PetPost> searchByTitleFulltext(@Param("kw") String kw, Pageable pageable);
 
     @Query("SELECT p FROM PetPost p ORDER BY p.likeCount DESC")
     List<PetPost> findTop10ByLikeCount(Pageable pageable);

@@ -18,6 +18,8 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+// title FULLTEXT 인덱스(ft_title, WITH PARSER ngram)는 JPA로 표현할 수 없어
+// 마이그레이션(2026-06-14-petpost-title-fulltext.sql)으로만 관리한다. ddl-auto:update는 이 인덱스를 건드리지 않는다.
 @Table(name = "pet_post", indexes = {
         @Index(name = "idx_pet_post_created_like", columnList = "created_at, like_count")
 })

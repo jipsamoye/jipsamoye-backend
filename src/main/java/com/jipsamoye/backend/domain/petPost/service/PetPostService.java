@@ -5,6 +5,7 @@ import com.jipsamoye.backend.domain.petPost.dto.request.PetPostUpdateRequest;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
+import com.jipsamoye.backend.global.response.SliceResponse;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public interface PetPostService {
      */
     void deletePost(Long id, Long userId);
 
-    PageResponse<?> searchPosts(String keyword, int page, int size);
+    SliceResponse<PetPostListResponse> searchPosts(String keyword, int page, int size);
 
     /**
      * 오늘의 멍냥 — 스케줄러가 1시간마다 캐싱한 데이터 반환 (DB 직접 조회 X)

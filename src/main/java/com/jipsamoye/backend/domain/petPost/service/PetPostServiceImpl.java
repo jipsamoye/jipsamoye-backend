@@ -14,12 +14,17 @@ import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
+import com.jipsamoye.backend.global.response.SliceResponse;
 import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -104,12 +109,36 @@ public class PetPostServiceImpl implements PetPostService {
         petPost.softDelete();
     }
 
+    /**
+     * BOOLEAN MODE 연산자/제어문자 제거 + trim. 정제 결과가 비면 빈 문자열.
+     * 제거 대상: + - * " ( ) ~ < > @ 및 모든 제어문자(\p{Cntrl}).
+     */
+    private static final Pattern BOOLEAN_OPERATORS = Pattern.compile("[+\\-*\"()~<>@]|\\p{Cntrl}");
+
+    static String sanitizeKeyword(String keyword) {
+        if (keyword == null) {
+            return "";
+        }
+        return BOOLEAN_OPERATORS.matcher(keyword).replaceAll("").trim();
+    }
+
     @Override
-    public PageResponse<PetPostListResponse> searchPosts(String keyword, int page, int size) {
-        Page<PetPostListResponse> postPage = petPostRepository
-                .findByTitleContaining(keyword, PageRequest.of(page, size))
+    public SliceResponse<PetPostListResponse> searchPosts(String keyword, int page, int size) {
+        String sanitized = sanitizeKeyword(keyword);
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        // 정제 후 빈 문자열이면 쿼리를 실행하지 않고 빈 결과 반환
+        if (sanitized.isEmpty()) {
+            Slice<PetPostListResponse> empty = new SliceImpl<>(java.util.List.of(), pageRequest, false);
+            return SliceResponse.from(empty);
+        }
+
+        // 구문검색을 위해 큰따옴표로 감싸 BOOLEAN MODE 구(phrase)로 전달 → LIKE와 동일한 연속 부분문자열 매칭
+        String phraseQuery = "\"" + sanitized + "\"";
+        Slice<PetPostListResponse> postSlice = petPostRepository
+                .searchByTitleFulltext(phraseQuery, pageRequest)
                 .map(PetPostListResponse::from);
-        return PageResponse.from(postPage);
+        return SliceResponse.from(postSlice);
     }
 
     @Override
