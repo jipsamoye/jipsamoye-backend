@@ -2,6 +2,7 @@ package com.jipsamoye.backend.global.exception;
 
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.response.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +49,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(ErrorCode.INVALID_INPUT, fieldErrors));
+    }
+
+    // @RequestParam/@PathVariable 등 메서드 파라미터의 @Min/@Max/@NotNull 위반(@Validated 컨트롤러).
+    // 핸들러가 없으면 catch-all(Exception)로 떨어져 500이 반환되므로 별도 처리한다.
+    @ExceptionHandler(ConstraintViolationException.class)
+    protected ResponseEntity<ApiResponse<Void>> handleConstraintViolationException(
+            ConstraintViolationException e) {
+        log.warn("Parameter validation failed: {}", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

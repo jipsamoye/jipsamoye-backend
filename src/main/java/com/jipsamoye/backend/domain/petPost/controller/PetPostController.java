@@ -11,6 +11,7 @@ import com.jipsamoye.backend.domain.petPost.service.RankingService;
 import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
+import com.jipsamoye.backend.global.response.SliceResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -119,13 +120,13 @@ public class PetPostController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "게시글 검색", description = "제목 기반으로 게시글을 검색합니다.")
+    @Operation(summary = "게시글 검색", description = "제목 기반 FULLTEXT 구문검색. 무한스크롤(Slice)로 hasNext만 제공합니다.")
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<PageResponse<?>>> searchPosts(
+    public ResponseEntity<ApiResponse<SliceResponse<PetPostListResponse>>> searchPosts(
             @Parameter(description = "검색 키워드") @RequestParam String q,
-            @Parameter(description = "페이지 번호 (0부터)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size) {
-        PageResponse<?> response = petPostService.searchPosts(q, page, size);
+            @Parameter(description = "페이지 번호 (0부터)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "페이지 크기 (1~50)") @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size) {
+        SliceResponse<PetPostListResponse> response = petPostService.searchPosts(q, page, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

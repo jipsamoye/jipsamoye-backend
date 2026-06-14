@@ -8,6 +8,7 @@ import com.jipsamoye.backend.domain.petPost.service.RankingService;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
+import com.jipsamoye.backend.global.response.SliceResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,6 +27,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -143,5 +147,53 @@ class PetPostControllerRankingTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("미래 기간은 조회할 수 없습니다."));
+    }
+
+    private SliceResponse<PetPostListResponse> emptySlice() {
+        return SliceResponse.from(new SliceImpl<>(List.of(), PageRequest.of(0, 20), false));
+    }
+
+    @Test
+    @DisplayName("200 - 검색 정상 조회 (page/size 기본값)")
+    void searchPosts_returns200() throws Exception {
+        when(petPostService.searchPosts(anyString(), anyInt(), anyInt()))
+                .thenReturn(emptySlice());
+
+        mockMvc.perform(get("/api/posts/search")
+                        .param("q", "강아지"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("SUCCESS"))
+                .andExpect(jsonPath("$.data.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("400 - 검색 page가 음수인 경우 (@Min(0) 위반)")
+    void searchPosts_negativePage_returns400() throws Exception {
+        mockMvc.perform(get("/api/posts/search")
+                        .param("q", "강아지")
+                        .param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("400 - 검색 size가 0인 경우 (@Min(1) 위반)")
+    void searchPosts_zeroSize_returns400() throws Exception {
+        mockMvc.perform(get("/api/posts/search")
+                        .param("q", "강아지")
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("400 - 검색 size가 50 초과인 경우 (@Max(50) 위반)")
+    void searchPosts_oversizeSize_returns400() throws Exception {
+        mockMvc.perform(get("/api/posts/search")
+                        .param("q", "강아지")
+                        .param("size", "51"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
     }
 }
