@@ -79,15 +79,31 @@ public class BoardCommentServiceImpl implements BoardCommentService {
         BoardComment saved = boardCommentRepository.save(comment);
         boardRepository.incrementCommentCount(request.boardId());
 
-        User notifyTarget = (mentionedUser != null) ? mentionedUser : (parent != null ? parent.getUser() : null);
-        if (notifyTarget != null && !notifyTarget.getId().equals(userId)) {
-            eventPublisher.publishEvent(new NotificationEvent(
-                    notifyTarget, user,
-                    NotificationType.BOARD_COMMENT_REPLY,
-                    saved.getId(),
-                    board.getId(),
-                    user.getNickname() + "님이 회원님의 댓글에 답글을 남겼습니다"
-            ));
+        // 한 댓글 = 알림 대상 1명 (중복 발송 없음)
+        if (parent == null && mentionedUser == null) {
+            // 최상위 댓글 → 게시판 글 작성자에게 알림
+            User boardOwner = board.getUser();
+            if (boardOwner != null && !boardOwner.getId().equals(userId)) {
+                eventPublisher.publishEvent(new NotificationEvent(
+                        boardOwner, user,
+                        NotificationType.BOARD_COMMENT,
+                        saved.getId(),
+                        board.getId(),
+                        user.getNickname() + "님이 회원님의 게시글에 댓글을 남겼습니다"
+                ));
+            }
+        } else {
+            // 답글 → mentionedUser 우선, 없으면 부모 댓글 작성자에게 알림
+            User notifyTarget = (mentionedUser != null) ? mentionedUser : parent.getUser();
+            if (notifyTarget != null && !notifyTarget.getId().equals(userId)) {
+                eventPublisher.publishEvent(new NotificationEvent(
+                        notifyTarget, user,
+                        NotificationType.BOARD_COMMENT_REPLY,
+                        saved.getId(),
+                        board.getId(),
+                        user.getNickname() + "님이 회원님의 댓글에 답글을 남겼습니다"
+                ));
+            }
         }
 
         long replyCount = parent == null ? boardCommentRepository.countByParentAndDeletedAtIsNull(saved) : 0L;
