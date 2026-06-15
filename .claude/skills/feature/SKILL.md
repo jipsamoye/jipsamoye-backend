@@ -1,7 +1,7 @@
 ---
 name: feature
-description: 기능 개발 파이프라인 — 계획(사용자와 대화) → Sonnet 구현 → 독립 리뷰·검증 → develop 푸시 + main PR 생성
-argument-hint: [기능 설명]
+description: 기능 개발 파이프라인 — 계획(사용자와 대화) → Opus 구현 → 독립 리뷰·검증 → develop 푸시 + main PR 생성
+argument-hint: "[superpower] [기능 설명] — superpower를 붙이면 인터뷰 기반 계획"
 disable-model-invocation: true
 ---
 
@@ -9,21 +9,37 @@ disable-model-invocation: true
 
 사용자가 요청한 기능: $ARGUMENTS
 
+**모드 판별**: $ARGUMENTS가 `superpower`로 시작하면 **superpower 모드**(인터뷰 기반 계획)이고 나머지 텍스트가 기능 설명이다. 아니면 **기본 모드**이고 전체가 기능 설명이다.
+
 아래 4단계를 순서대로 진행한다. 각 단계의 완료 조건을 만족하기 전에는 절대 다음 단계로 넘어가지 않는다.
 
 ## 1단계 — 구현 계획 (메인 세션이 직접, 사용자와 대화)
 
-1. 관련 코드·docs/ARCHITECTURE.md·docs/CONVENTIONS.md를 충분히 탐색한 뒤, CLAUDE.md "작업 방식" 규칙대로 계획을 제안한다:
+### 기본 모드
+
+1. 관련 코드·docs/ARCHITECTURE.md·docs/CONVENTIONS.md를 충분히 탐색한다.
+2. **요청이 추상적이면 먼저 구체화한다**: 탐색 결과 요청에 모호한 지점(API 설계, 엔티티 구조, 동작 방식, 적용 범위, 엣지 케이스 처리 등)이 남아 있으면 AskUserQuestion 도구로 선택지를 제시해 확정한다. 각 질문에는 **추천 옵션을 첫 번째로 놓고 추천 이유를 함께 표시**한다. 요청이 이미 구체적이면 이 단계는 생략한다.
+3. CLAUDE.md "작업 방식" 규칙대로 계획을 제안한다:
    - 목표 / 접근법 / 완료 기준
    - 현재 방식보다 나은 대안이 없는지 검토한 결과
    - 선택한 방식의 잠재적 문제점·트레이드오프
-2. 사용자와 대화를 반복하며 계획을 다듬는다. 사용자의 피드백을 반영할 때마다 수정된 계획을 다시 보여준다.
-3. **완료 조건: 사용자가 계획을 명시적으로 승인한다.** 승인 전에는 어떤 코드도 수정하지 않는다.
-4. 승인된 계획을 구현 에이전트에게 그대로 전달할 수 있도록 완결된 형태로 정리한다: 변경/생성할 파일 목록, API 스펙(엔드포인트·요청·응답), 엔티티/스키마 변경, 작성할 테스트 항목.
+4. 사용자와 대화를 반복하며 계획을 다듬는다. 사용자의 피드백을 반영할 때마다 수정된 계획을 다시 보여준다.
+5. **완료 조건: 사용자가 계획을 명시적으로 승인한다.** 승인 전에는 어떤 코드도 수정하지 않는다.
+6. **승인된 계획 정리**: 구현 에이전트에게 그대로 전달할 수 있도록 완결된 형태로 정리한다: 변경/생성할 파일 목록, API 스펙(엔드포인트·요청·응답), 엔티티/스키마 변경, 작성할 테스트 항목.
+7. **복잡한 작업이면 superpower 모드를 제안한다**: 탐색 결과 작업이 복잡하면(여러 도메인·레이어에 걸침, 요구사항이 모호함, 설계 선택지가 많음 등) "이 작업은 인터뷰 기반 구체화(superpower 모드)가 나을 것 같다"고 **제안만** 하고 사용자가 결정한다. 사용자가 수락하면 아래 superpower 모드로 전환한다. (구분 기준 — 2번 AskUserQuestion: 방향은 정해져 있고 **구체적 모호점 몇 개**만 확정하면 될 때. superpower 모드: 요구사항·설계 방향 **자체**를 인터뷰로 처음부터 만들어가야 할 때.)
 
-## 2단계 — 구현 (implementer 서브에이전트, Sonnet)
+### superpower 모드
 
-1. 브랜치 준비: `git checkout develop && git pull` 후 `feature/{기능명}` 브랜치 생성.
+**우선순위 원칙**: 이 파이프라인이 brainstorming 스킬을 호출하는 상위 컨텍스트다. brainstorming 내부 지시와 이 스킬의 지시가 충돌하면 **이 스킬이 우선한다.**
+
+1. **brainstorming 호출 전에 브랜치를 먼저 만든다**: `git checkout develop && git pull` 후 `feature/{기능명}` 브랜치 생성 ({기능명}은 초기 기능 설명 기반 영문 케밥케이스). brainstorming이 만드는 spec 문서(`docs/superpowers/specs/`)의 커밋이 develop이 아닌 이 브랜치에 들어가게 하기 위함이다.
+2. Skill 도구로 `superpowers:brainstorming` 스킬을 호출해, 인터뷰(질문 1개씩)로 요구사항·접근법·설계를 구체화한다. 기능 설명($ARGUMENTS에서 `superpower`를 뺀 나머지)을 Skill 도구의 `args` 파라미터로 전달한다.
+3. **brainstorming은 spec 작성·커밋·사용자 승인까지만 진행한다.** brainstorming 내부 지시는 그 다음 단계로 writing-plans 스킬 호출을 요구하지만, 이 파이프라인에서는 구현 계획·구현을 implementer가 담당하므로 **writing-plans를 호출하지 않는다** (우선순위 원칙 적용). spec 승인이 확인되면 즉시 이 파이프라인으로 복귀한다.
+4. 승인된 spec을 기본 모드의 "승인된 계획 정리" 형식(변경/생성 파일 목록, API 스펙, 엔티티/스키마 변경, 작성할 테스트 항목)으로 정리한다. spec 승인이 곧 계획 승인이므로 별도 재승인은 받지 않되, 정리된 구현 계획을 사용자에게 한 번 보여주고 2단계로 진행한다.
+
+## 2단계 — 구현 (implementer 서브에이전트, Opus)
+
+1. 브랜치 준비: `git checkout develop && git pull` 후 `feature/{기능명}` 브랜치 생성 (superpower 모드에서 이미 생성했다면 생략). {기능명}은 영문 케밥케이스로 짓는다 (예: "게시글 북마크" → `feature/post-bookmark`).
 2. Agent 도구로 `implementer` 서브에이전트를 호출한다. 프롬프트에 반드시 포함할 것:
    - 1단계에서 승인된 계획 전문
    - "CLAUDE.md와 docs/CONVENTIONS.md를 준수할 것"

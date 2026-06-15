@@ -13,6 +13,7 @@ import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
+import com.jipsamoye.backend.global.response.CursorResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import com.jipsamoye.backend.global.response.SliceResponse;
 import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 @Service
@@ -63,11 +65,27 @@ public class PetPostServiceImpl implements PetPostService {
     }
 
     @Override
-    public PageResponse<PetPostListResponse> getPosts(int page, int size) {
-        Page<PetPostListResponse> postPage = petPostRepository
-                .findAllByOrderByCreatedAtDesc(PageRequest.of(page, size))
-                .map(PetPostListResponse::from);
-        return PageResponse.from(postPage);
+    public CursorResponse<PetPostListResponse> getPosts(Long cursor, int size) {
+        // hasNext 판정을 위해 size+1개를 조회한 뒤 초과분을 잘라낸다 (chat 모듈과 동일한 패턴, reverse는 불필요)
+        PageRequest pageRequest = PageRequest.of(0, size + 1);
+        List<PetPost> fetched = (cursor == null)
+                ? petPostRepository.findByOrderByIdDesc(pageRequest)
+                : petPostRepository.findByIdLessThanOrderByIdDesc(cursor, pageRequest);
+
+        boolean hasNext = fetched.size() > size;
+        if (hasNext) {
+            fetched = fetched.subList(0, size);
+        }
+
+        List<PetPostListResponse> content = fetched.stream()
+                .map(PetPostListResponse::from)
+                .toList();
+
+        Long nextCursor = (hasNext && !content.isEmpty())
+                ? content.get(content.size() - 1).id()
+                : null;
+
+        return CursorResponse.of(content, size, hasNext, nextCursor);
     }
 
     @Override
