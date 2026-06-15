@@ -50,3 +50,6 @@ out/
 *.rar
 hs_err_pid*
 replay_pid*
+
+# loadtest 생성 데이터 (대용량 TSV)
+loadtest/data/
