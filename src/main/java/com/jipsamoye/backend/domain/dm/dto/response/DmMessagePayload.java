@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record DmMessagePayload(
         Long id,
+        Long roomId,
         String senderNickname,
         String content,
         String imageUrl,
@@ -14,6 +15,7 @@ public record DmMessagePayload(
     public static DmMessagePayload of(DmMessageResponse r, String clientMessageId) {
         return new DmMessagePayload(
                 r.id(),
+                r.roomId(),
                 r.senderNickname(),
                 r.content(),
                 r.imageUrl(),

@@ -10,5 +10,6 @@ public interface DmService {
     List<DmRoomResponse> getRooms(Long userId);
     DmRoomResponse createRoom(Long userId, String targetNickname);
     PageResponse<DmMessageResponse> getMessages(Long roomId, Long userId, int page, int size);
-    DmMessageResponse sendMessage(Long userId, Long roomId, String content, String imageUrl);
+    DmMessageResponse sendMessage(Long userId, Long roomId, String targetNickname, String content, String imageUrl);
+    void markAsRead(Long userId, Long roomId);
 }

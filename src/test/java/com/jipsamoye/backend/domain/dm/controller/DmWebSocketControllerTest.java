@@ -1,5 +1,6 @@
 package com.jipsamoye.backend.domain.dm.controller;
 
+import com.jipsamoye.backend.domain.dm.dto.request.DmReadRequest;
 import com.jipsamoye.backend.domain.dm.dto.request.DmSendRequest;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageEvent;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageResponse;
@@ -49,12 +50,12 @@ class DmWebSocketControllerTest {
     class SendMessageTest {
 
         @Test
-        @DisplayName("전송 시 destination이 '/sub/dm/room/{roomId}'이고 envelope type=='MESSAGE', clientMessageId 에코 보존")
+        @DisplayName("전송 시 destination이 응답 roomId 기반 '/sub/dm/room/{roomId}'이고 envelope type=='MESSAGE', clientMessageId 에코 보존")
         void sendMessage_envelopeTypeAndClientMessageId() {
-            DmSendRequest request = new DmSendRequest(42L, "안녕", null, "cid-001");
+            DmSendRequest request = new DmSendRequest(42L, null, "안녕", null, "cid-001");
             DmMessageResponse serviceResponse = new DmMessageResponse(
-                    1L, "발신자", "안녕", null, null, LocalDateTime.now());
-            when(dmService.sendMessage(99L, 42L, "안녕", null)).thenReturn(serviceResponse);
+                    1L, 42L, "발신자", "안녕", null, null, LocalDateTime.now());
+            when(dmService.sendMessage(99L, 42L, null, "안녕", null)).thenReturn(serviceResponse);
 
             SimpMessageHeaderAccessor accessor = headerAccessorWithUserId(99L);
             controller.sendMessage(request, accessor);
@@ -66,16 +67,17 @@ class DmWebSocketControllerTest {
             assertThat(event.type()).isEqualTo("MESSAGE");
             assertThat(event.message().clientMessageId()).isEqualTo("cid-001");
             assertThat(event.message().id()).isEqualTo(1L);
+            assertThat(event.message().roomId()).isEqualTo(42L);
             assertThat(event.message().senderNickname()).isEqualTo("발신자");
         }
 
         @Test
         @DisplayName("clientMessageId가 null이어도 정상 동작하고 null이 에코됨")
         void sendMessage_nullClientMessageId_echoesNull() {
-            DmSendRequest request = new DmSendRequest(7L, "내용", null, null);
+            DmSendRequest request = new DmSendRequest(7L, null, "내용", null, null);
             DmMessageResponse serviceResponse = new DmMessageResponse(
-                    2L, "유저", "내용", null, null, LocalDateTime.now());
-            when(dmService.sendMessage(5L, 7L, "내용", null)).thenReturn(serviceResponse);
+                    2L, 7L, "유저", "내용", null, null, LocalDateTime.now());
+            when(dmService.sendMessage(5L, 7L, null, "내용", null)).thenReturn(serviceResponse);
 
             SimpMessageHeaderAccessor accessor = headerAccessorWithUserId(5L);
             controller.sendMessage(request, accessor);
@@ -86,6 +88,40 @@ class DmWebSocketControllerTest {
             DmMessageEvent event = eventCaptor.getValue();
             assertThat(event.type()).isEqualTo("MESSAGE");
             assertThat(event.message().clientMessageId()).isNull();
+        }
+
+        @Test
+        @DisplayName("draft 전송(roomId null + targetNickname) 시 서비스가 resolve한 roomId 기반 destination으로 broadcast")
+        void sendMessage_draft_broadcastsToResolvedRoomId() {
+            DmSendRequest request = new DmSendRequest(null, "냥집사", "첫 메시지", null, "cid-draft");
+            DmMessageResponse serviceResponse = new DmMessageResponse(
+                    3L, 99L, "발신자", "첫 메시지", null, null, LocalDateTime.now());
+            when(dmService.sendMessage(1L, null, "냥집사", "첫 메시지", null)).thenReturn(serviceResponse);
+
+            SimpMessageHeaderAccessor accessor = headerAccessorWithUserId(1L);
+            controller.sendMessage(request, accessor);
+
+            ArgumentCaptor<DmMessageEvent> eventCaptor = ArgumentCaptor.forClass(DmMessageEvent.class);
+            verify(messagingTemplate).convertAndSend(eq("/sub/dm/room/99"), eventCaptor.capture());
+            assertThat(eventCaptor.getValue().message().roomId()).isEqualTo(99L);
+            assertThat(eventCaptor.getValue().message().clientMessageId()).isEqualTo("cid-draft");
+        }
+    }
+
+    @Nested
+    @DisplayName("read 메서드")
+    class ReadTest {
+
+        @Test
+        @DisplayName("/dm/read 수신 시 세션 userId로 markAsRead(userId, roomId) 호출")
+        void read_callsMarkAsRead() {
+            DmReadRequest request = new DmReadRequest(55L);
+            SimpMessageHeaderAccessor accessor = headerAccessorWithUserId(7L);
+
+            controller.read(request, accessor);
+
+            verify(dmService).markAsRead(7L, 55L);
+            verifyNoInteractions(messagingTemplate);
         }
     }
 }
