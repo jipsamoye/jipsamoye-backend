@@ -1,0 +1,32 @@
+# 컨텍스트 로드 스모크 테스트(@SpringBootTest)용 프로필.
+# 실제 MySQL/AWS/NAVER 인프라 없이 풀 애플리케이션 컨텍스트를 부팅하기 위한 설정.
+# - DataSource: H2 in-memory (MODE=MySQL)
+# - 외부 클라이언트 빈(S3/NAVER)은 mock 대신 더미 자격증명을 주입해 실제 빈 그래프를 그대로 생성한다.
+#   (빌더만 호출하고 네트워크 연결은 lazy 하므로 부팅 시 외부 접속이 발생하지 않는다.)
+spring:
+  datasource:
+    url: jdbc:h2:mem:contextload;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+cloud:
+  aws:
+    s3:
+      bucket: test-bucket
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    region:
+      static: ap-northeast-2
+
+naver:
+  oauth:
+    client-id: test-naver-client-id
+    client-secret: test-naver-client-secret
