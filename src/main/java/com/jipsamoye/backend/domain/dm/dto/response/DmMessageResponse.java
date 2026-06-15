@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record DmMessageResponse(
         Long id,
+        Long roomId,
         String senderNickname,
         String content,
         String imageUrl,
@@ -15,6 +16,7 @@ public record DmMessageResponse(
     public static DmMessageResponse from(DmMessage message) {
         return new DmMessageResponse(
                 message.getId(),
+                message.getRoom().getId(),
                 message.getSender().getNickname(),
                 message.getContent(),
                 message.getImageUrl(),

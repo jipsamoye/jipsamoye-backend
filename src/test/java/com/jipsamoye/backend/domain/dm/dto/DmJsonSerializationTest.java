@@ -76,7 +76,7 @@ class DmJsonSerializationTest {
         void dmMessageEvent_keyMatchesSpec() throws Exception {
             LocalDateTime now = LocalDateTime.of(2024, 1, 15, 10, 0, 0);
             DmMessageResponse msgResponse = new DmMessageResponse(
-                    1L, "발신자", "내용", "http://image.url", null, now);
+                    1L, 42L, "발신자", "내용", "http://image.url", null, now);
             DmMessageEvent event = DmMessageEvent.of(msgResponse, "cid-123");
 
             String json = objectMapper.writeValueAsString(event);
@@ -87,6 +87,8 @@ class DmJsonSerializationTest {
             assertThat(message).isNotNull();
             assertThat(message.has("id")).isTrue();
             assertThat(message.get("id").asLong()).isEqualTo(1L);
+            assertThat(message.has("roomId")).isTrue();
+            assertThat(message.get("roomId").asLong()).isEqualTo(42L);
             assertThat(message.has("senderNickname")).isTrue();
             assertThat(message.get("senderNickname").asText()).isEqualTo("발신자");
             assertThat(message.has("content")).isTrue();
@@ -102,7 +104,7 @@ class DmJsonSerializationTest {
         void dmMessageEvent_createdAt_isIso8601NaiveString() throws Exception {
             LocalDateTime createdAt = LocalDateTime.of(2026, 6, 11, 10, 0, 0);
             DmMessageResponse msgResponse = new DmMessageResponse(
-                    1L, "발신자", "내용", null, null, createdAt);
+                    1L, 42L, "발신자", "내용", null, null, createdAt);
             DmMessageEvent event = DmMessageEvent.of(msgResponse, "cid-abc");
 
             String json = objectMapper.writeValueAsString(event);
@@ -117,7 +119,7 @@ class DmJsonSerializationTest {
             LocalDateTime createdAt = LocalDateTime.of(2026, 6, 11, 10, 0, 0);
             LocalDateTime readAt = LocalDateTime.of(2026, 6, 11, 10, 5, 0);
             DmMessageResponse msgResponse = new DmMessageResponse(
-                    2L, "발신자", "내용", null, readAt, createdAt);
+                    2L, 42L, "발신자", "내용", null, readAt, createdAt);
             DmMessageEvent event = DmMessageEvent.of(msgResponse, "cid-def");
 
             String json = objectMapper.writeValueAsString(event);
