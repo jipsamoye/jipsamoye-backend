@@ -10,6 +10,7 @@ import com.jipsamoye.backend.domain.petPost.service.PetPostService;
 import com.jipsamoye.backend.domain.petPost.service.RankingService;
 import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
+import com.jipsamoye.backend.global.response.CursorResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import com.jipsamoye.backend.global.response.SliceResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -82,12 +83,16 @@ public class PetPostController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "게시글 목록 조회", description = "최신순으로 게시글 목록을 조회합니다.")
+    @Operation(summary = "게시글 목록 조회",
+            description = "최신순 게시글 목록을 커서(무한스크롤)로 조회합니다. "
+                    + "cursor 생략 시 최신부터, 응답의 nextCursor를 다음 요청 cursor로 전달합니다. nextCursor가 null이면 마지막 페이지입니다.")
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<?>>> getPosts(
-            @Parameter(description = "페이지 번호 (0부터)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size) {
-        PageResponse<?> response = petPostService.getPosts(page, size);
+    public ResponseEntity<ApiResponse<CursorResponse<PetPostListResponse>>> getPosts(
+            @Parameter(description = "직전 응답의 nextCursor(마지막 게시글 id). 생략 시 최신부터 조회")
+            @RequestParam(required = false) Long cursor,
+            @Parameter(description = "페이지 크기")
+            @RequestParam(defaultValue = "20") int size) {
+        CursorResponse<PetPostListResponse> response = petPostService.getPosts(cursor, size);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 

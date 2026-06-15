@@ -10,6 +10,7 @@ import com.jipsamoye.backend.domain.user.entity.Provider;
 import com.jipsamoye.backend.domain.user.entity.Role;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
+import com.jipsamoye.backend.global.response.CursorResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import com.jipsamoye.backend.global.response.SliceResponse;
 import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
@@ -26,8 +27,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -69,6 +72,13 @@ class PetPostServiceImplTest {
                 .build();
     }
 
+    /** 지정한 id를 가진 게시글(@GeneratedValue라 테스트에선 리플렉션으로 주입) */
+    private static PetPost postWithId(long id) {
+        PetPost post = postBy(activeUser());
+        ReflectionTestUtils.setField(post, "id", id);
+        return post;
+    }
+
     @Test
     @DisplayName("팔로잉이 없으면 빈 피드를 반환한다")
     void getFeed_noFollowings_returnsEmptyPage() {
@@ -106,6 +116,92 @@ class PetPostServiceImplTest {
         petPostService.getFeed(99L, 0, 20);
 
         verify(petPostRepository).findFeedByFollowerId(eq(99L), any(Pageable.class));
+    }
+
+    // ===== getPosts 커서(keyset) 페이징 단위 테스트 =====
+
+    @Test
+    @DisplayName("cursor가 null이면 첫 페이지를 findByOrderByIdDesc로 조회한다")
+    void getPosts_nullCursor_usesFirstPageQuery() {
+        when(petPostRepository.findByOrderByIdDesc(any(Pageable.class)))
+                .thenReturn(List.of(postWithId(10L), postWithId(9L)));
+
+        petPostService.getPosts(null, 20);
+
+        // size+1(=21)개를 요청하는지 확인
+        verify(petPostRepository).findByOrderByIdDesc(PageRequest.of(0, 21));
+        verify(petPostRepository, never()).findByIdLessThanOrderByIdDesc(any(), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("cursor가 있으면 findByIdLessThanOrderByIdDesc에 cursor를 그대로 전달한다")
+    void getPosts_withCursor_usesLessThanQuery() {
+        when(petPostRepository.findByIdLessThanOrderByIdDesc(eq(50L), any(Pageable.class)))
+                .thenReturn(List.of(postWithId(49L), postWithId(48L)));
+
+        petPostService.getPosts(50L, 20);
+
+        verify(petPostRepository).findByIdLessThanOrderByIdDesc(eq(50L), eq(PageRequest.of(0, 21)));
+        verify(petPostRepository, never()).findByOrderByIdDesc(any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("size+1개가 조회되면 hasNext=true, 초과분을 잘라내고 nextCursor=마지막 항목 id")
+    void getPosts_moreThanSize_hasNextTrueWithTrimmedContentAndNextCursor() {
+        int size = 3;
+        // id 10,9,8,7 (size+1=4개) — 7은 초과분
+        List<PetPost> fetched = IntStream.of(10, 9, 8, 7)
+                .mapToObj(i -> postWithId(i))
+                .toList();
+        when(petPostRepository.findByOrderByIdDesc(any(Pageable.class))).thenReturn(fetched);
+
+        CursorResponse<PetPostListResponse> result = petPostService.getPosts(null, size);
+
+        assertThat(result.getContent()).hasSize(3);
+        assertThat(result.getContent().stream().map(PetPostListResponse::id))
+                .containsExactly(10L, 9L, 8L);
+        assertThat(result.isHasNext()).isTrue();
+        assertThat(result.getNextCursor()).isEqualTo(8L); // trim 후 마지막 항목 id
+        assertThat(result.getSize()).isEqualTo(size);
+    }
+
+    @Test
+    @DisplayName("size 이하로 조회되면 마지막 페이지로 hasNext=false, nextCursor=null")
+    void getPosts_lastPage_hasNextFalseWithNullCursor() {
+        when(petPostRepository.findByIdLessThanOrderByIdDesc(eq(5L), any(Pageable.class)))
+                .thenReturn(List.of(postWithId(4L), postWithId(3L)));
+
+        CursorResponse<PetPostListResponse> result = petPostService.getPosts(5L, 20);
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.isHasNext()).isFalse();
+        assertThat(result.getNextCursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("결과가 비어 있으면 hasNext=false, nextCursor=null")
+    void getPosts_empty_returnsEmptyWithNullCursor() {
+        when(petPostRepository.findByOrderByIdDesc(any(Pageable.class))).thenReturn(List.of());
+
+        CursorResponse<PetPostListResponse> result = petPostService.getPosts(null, 20);
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.isHasNext()).isFalse();
+        assertThat(result.getNextCursor()).isNull();
+    }
+
+    @Test
+    @DisplayName("조회 결과를 PetPostListResponse로 매핑한다")
+    void getPosts_mapsToListResponse() {
+        when(petPostRepository.findByOrderByIdDesc(any(Pageable.class)))
+                .thenReturn(List.of(postWithId(1L)));
+
+        CursorResponse<PetPostListResponse> result = petPostService.getPosts(null, 20);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).id()).isEqualTo(1L);
+        assertThat(result.getContent().get(0).title()).isEqualTo("팔로잉 게시글");
+        assertThat(result.getContent().get(0).nickname()).isEqualTo("테스터");
     }
 
     // ===== 검색어 정제(sanitizeKeyword) 단위 테스트 =====

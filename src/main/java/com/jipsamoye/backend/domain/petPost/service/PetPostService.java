@@ -4,6 +4,7 @@ import com.jipsamoye.backend.domain.petPost.dto.request.PetPostCreateRequest;
 import com.jipsamoye.backend.domain.petPost.dto.request.PetPostUpdateRequest;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostResponse;
+import com.jipsamoye.backend.global.response.CursorResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import com.jipsamoye.backend.global.response.SliceResponse;
 
@@ -15,7 +16,10 @@ public interface PetPostService {
 
     PetPostResponse getPost(Long id);
 
-    PageResponse<?> getPosts(int page, int size);
+    /**
+     * 최신 자랑 목록 — 커서(keyset) 페이징. cursor 생략 시 최신부터, nextCursor로 다음 페이지 요청.
+     */
+    CursorResponse<PetPostListResponse> getPosts(Long cursor, int size);
 
     PetPostResponse updatePost(Long id, PetPostUpdateRequest request, Long userId);
 
