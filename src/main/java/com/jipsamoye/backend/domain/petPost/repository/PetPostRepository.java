@@ -16,7 +16,16 @@ import org.springframework.data.repository.query.Param;
 
 public interface PetPostRepository extends JpaRepository<PetPost, Long> {
 
-    Page<PetPost> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    /**
+     * 커서 페이징 첫 페이지 — id DESC(IDENTITY 단조증가 = createdAt DESC와 동순서, 안정적 tiebreaker).
+     * soft-delete는 @SQLRestriction("deleted_at IS NULL")로 자동 적용. size+1 조회로 hasNext 판정.
+     */
+    List<PetPost> findByOrderByIdDesc(Pageable pageable);
+
+    /**
+     * 커서 페이징 다음 페이지 — 마지막으로 받은 id보다 작은(=더 오래된) 게시글을 id DESC로 조회.
+     */
+    List<PetPost> findByIdLessThanOrderByIdDesc(Long id, Pageable pageable);
 
     Page<PetPost> findAllByUser(User user, Pageable pageable);
 
