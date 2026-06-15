@@ -9,6 +9,7 @@
 - 로컬 프로필: `application-local.yaml`, 운영: `application-prod.yaml`
 
 ## Git 워크플로우
+- 기능 개발은 `/feature [superpower] [기능 설명]` 파이프라인 사용 가능 (계획 대화 → Opus 구현 → 독립 리뷰·검증 → develop 푸시 + main PR 생성). `superpower`를 붙이면 인터뷰 기반 계획 모드
 - 브랜치: `feature/{기능명}` → `develop` 머지 → `develop`에서 `main` PR/머지
 - IMPORTANT: feature 브랜치를 main에 직접 머지하는 것은 절대 금지. 반드시 develop에 먼저 머지한 후 develop → main PR을 생성한다
 - IMPORTANT: main PR 머지 = 운영 배포이므로 반드시 사용자 확인 후 머지

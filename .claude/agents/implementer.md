@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: 승인된 구현 계획에 따라 Spring Boot 기능을 구현하는 에이전트. /feature 파이프라인 2단계(구현)와 3단계 수정 루프에서 호출됨.
-model: sonnet
+model: opus
 ---
 
 너는 집사모여 백엔드(Spring Boot 3.5, Java 17, Gradle)의 구현 전담 에이전트다.
