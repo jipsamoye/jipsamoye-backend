@@ -1,5 +1,6 @@
 package com.jipsamoye.backend.domain.dm.controller;
 
+import com.jipsamoye.backend.domain.dm.dto.request.DmReadRequest;
 import com.jipsamoye.backend.domain.dm.dto.request.DmSendRequest;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageEvent;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageResponse;
@@ -21,10 +22,17 @@ public class DmWebSocketController {
     public void sendMessage(DmSendRequest request, SimpMessageHeaderAccessor headerAccessor) {
         Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
         DmMessageResponse response = dmService.sendMessage(
-                userId, request.roomId(),
+                userId, request.roomId(), request.targetNickname(),
                 request.content(), request.imageUrl());
 
-        messagingTemplate.convertAndSend("/sub/dm/room/" + request.roomId(),
+        // draft 전송(roomId == null)도 처리할 수 있도록 서비스가 resolve한 roomId 기준으로 broadcast한다.
+        messagingTemplate.convertAndSend("/sub/dm/room/" + response.roomId(),
                 DmMessageEvent.of(response, request.clientMessageId()));
+    }
+
+    @MessageMapping("/dm/read")
+    public void read(DmReadRequest request, SimpMessageHeaderAccessor headerAccessor) {
+        Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
+        dmService.markAsRead(userId, request.roomId());
     }
 }

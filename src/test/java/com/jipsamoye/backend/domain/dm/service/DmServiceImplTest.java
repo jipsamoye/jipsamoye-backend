@@ -1,8 +1,10 @@
 package com.jipsamoye.backend.domain.dm.service;
 
 import com.jipsamoye.backend.domain.dm.dto.response.DmRoomResponse;
+import com.jipsamoye.backend.domain.dm.entity.DmMessage;
 import com.jipsamoye.backend.domain.dm.entity.DmRoom;
 import com.jipsamoye.backend.domain.dm.event.DmMessagesReadEvent;
+import com.jipsamoye.backend.domain.dm.event.DmRoomUpdatedEvent;
 import com.jipsamoye.backend.domain.dm.repository.DmMessageRepository;
 import com.jipsamoye.backend.domain.dm.repository.DmRoomRepository;
 import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
@@ -50,48 +52,12 @@ class DmServiceImplTest {
     private ApplicationEventPublisher eventPublisher;
 
     @Nested
-    @DisplayName("createRoom 메서드")
+    @DisplayName("createRoom 메서드 (resolve)")
     class CreateRoomTest {
 
         @Test
-        @DisplayName("채팅방 생성 - 성공")
-        void createRoom_success() {
-            User user = mock(User.class);
-            User target = mock(User.class);
-            lenient().when(user.getId()).thenReturn(1L);
-            lenient().when(target.getId()).thenReturn(2L);
-            when(target.getNickname()).thenReturn("냥집사");
-            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
-            when(followRepository.existsByFollowerAndFollowing(user, target)).thenReturn(true);
-            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
-
-            DmRoom savedRoom = mock(DmRoom.class);
-            when(savedRoom.getId()).thenReturn(1L);
-            when(dmRoomRepository.save(any(DmRoom.class))).thenReturn(savedRoom);
-
-            DmRoomResponse response = dmService.createRoom(1L, "냥집사");
-
-            assertThat(response.roomId()).isEqualTo(1L);
-            assertThat(response.otherUserNickname()).isEqualTo("냥집사");
-        }
-
-        @Test
-        @DisplayName("채팅방 생성 - 자기 자신에게 DM 불가")
-        void createRoom_selfDm() {
-            User user = mock(User.class);
-            lenient().when(user.getId()).thenReturn(1L);
-            lenient().when(user.getNickname()).thenReturn("멍집사");
-            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-            when(userRepository.findByNickname("멍집사")).thenReturn(Optional.of(user));
-
-            assertThatThrownBy(() -> dmService.createRoom(1L, "멍집사"))
-                    .isInstanceOf(BusinessException.class);
-        }
-
-        @Test
-        @DisplayName("채팅방 생성 - 이미 존재하면 기존 방 반환")
-        void createRoom_existingRoom() {
+        @DisplayName("기존 방에 메시지가 있으면 - roomId 포함 응답 반환, save 미호출")
+        void createRoom_existingRoomWithMessage_returnsRoomId() {
             User user = mock(User.class);
             User target = mock(User.class);
             lenient().when(user.getId()).thenReturn(1L);
@@ -105,14 +71,83 @@ class DmServiceImplTest {
             when(existingRoom.getId()).thenReturn(5L);
             when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.of(existingRoom));
 
+            DmMessage lastMsg = mock(DmMessage.class);
+            when(lastMsg.getContent()).thenReturn("마지막 메시지");
+            when(dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(existingRoom))
+                    .thenReturn(Optional.of(lastMsg));
+            when(dmMessageRepository.countUnread(existingRoom, user)).thenReturn(2L);
+
             DmRoomResponse response = dmService.createRoom(1L, "냥집사");
 
             assertThat(response.roomId()).isEqualTo(5L);
+            assertThat(response.otherUserNickname()).isEqualTo("냥집사");
+            assertThat(response.lastMessage()).isEqualTo("마지막 메시지");
+            assertThat(response.unreadCount()).isEqualTo(2L);
             verify(dmRoomRepository, never()).save(any(DmRoom.class));
         }
 
         @Test
-        @DisplayName("채팅방 생성 - 미팔로우 상대에게는 FORBIDDEN 예외, dmRoomRepository.save 미호출")
+        @DisplayName("기존 빈 방(메시지 없음)이면 - draft 응답(roomId null) 반환, save 미호출")
+        void createRoom_existingEmptyRoom_returnsDraft() {
+            User user = mock(User.class);
+            User target = mock(User.class);
+            lenient().when(user.getId()).thenReturn(1L);
+            lenient().when(target.getId()).thenReturn(2L);
+            when(target.getNickname()).thenReturn("냥집사");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
+            when(followRepository.existsByFollowerAndFollowing(user, target)).thenReturn(true);
+
+            DmRoom existingRoom = mock(DmRoom.class);
+            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.of(existingRoom));
+            when(dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(existingRoom))
+                    .thenReturn(Optional.empty());
+
+            DmRoomResponse response = dmService.createRoom(1L, "냥집사");
+
+            assertThat(response.roomId()).isNull();
+            assertThat(response.otherUserNickname()).isEqualTo("냥집사");
+            verify(dmRoomRepository, never()).save(any(DmRoom.class));
+        }
+
+        @Test
+        @DisplayName("방이 없으면 - draft 응답(roomId null) 반환, save 미호출")
+        void createRoom_noRoom_returnsDraft() {
+            User user = mock(User.class);
+            User target = mock(User.class);
+            lenient().when(user.getId()).thenReturn(1L);
+            lenient().when(target.getId()).thenReturn(2L);
+            when(target.getNickname()).thenReturn("냥집사");
+            when(target.getProfileImageUrl()).thenReturn("http://img");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
+            when(followRepository.existsByFollowerAndFollowing(user, target)).thenReturn(true);
+            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
+
+            DmRoomResponse response = dmService.createRoom(1L, "냥집사");
+
+            assertThat(response.roomId()).isNull();
+            assertThat(response.otherUserNickname()).isEqualTo("냥집사");
+            assertThat(response.otherUserProfileImageUrl()).isEqualTo("http://img");
+            verify(dmRoomRepository, never()).save(any(DmRoom.class));
+            verify(dmMessageRepository, never()).findFirstByRoomOrderByCreatedAtDesc(any());
+        }
+
+        @Test
+        @DisplayName("자기 자신에게 DM 불가")
+        void createRoom_selfDm() {
+            User user = mock(User.class);
+            lenient().when(user.getId()).thenReturn(1L);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByNickname("멍집사")).thenReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> dmService.createRoom(1L, "멍집사"))
+                    .isInstanceOf(BusinessException.class);
+            verify(dmRoomRepository, never()).save(any(DmRoom.class));
+        }
+
+        @Test
+        @DisplayName("미팔로우 상대에게는 FORBIDDEN 예외, save 미호출")
         void createRoom_notFollowing_throwsForbidden() {
             User user = mock(User.class);
             User target = mock(User.class);
@@ -135,14 +170,150 @@ class DmServiceImplTest {
     class SendMessageTest {
 
         @Test
-        @DisplayName("메시지 전송 - 참여자가 아니면 FORBIDDEN")
+        @DisplayName("roomId 지정 - 참여자가 아니면 FORBIDDEN")
         void sendMessage_notParticipant() {
+            User sender = mock(User.class);
+            DmRoom room = mock(DmRoom.class);
+            when(userRepository.findById(3L)).thenReturn(Optional.of(sender));
+            when(room.isParticipant(3L)).thenReturn(false);
+            when(dmRoomRepository.findById(1L)).thenReturn(Optional.of(room));
+
+            assertThatThrownBy(() -> dmService.sendMessage(3L, 1L, null, "테스트", null))
+                    .isInstanceOf(BusinessException.class);
+        }
+
+        @Test
+        @DisplayName("roomId 지정 - 성공 시 메시지 저장 + DmRoomUpdatedEvent(양쪽 참가자) publish")
+        void sendMessage_existingRoom_publishesRoomUpdated() {
+            User sender = mock(User.class);
+            User user1 = mock(User.class);
+            User user2 = mock(User.class);
+            when(sender.getId()).thenReturn(1L);
+            when(user1.getId()).thenReturn(1L);
+            when(user2.getId()).thenReturn(2L);
+
+            DmRoom room = mock(DmRoom.class);
+            when(room.getId()).thenReturn(10L);
+            when(room.getUser1()).thenReturn(user1);
+            when(room.getUser2()).thenReturn(user2);
+            when(room.isParticipant(1L)).thenReturn(true);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
+            when(dmRoomRepository.findById(10L)).thenReturn(Optional.of(room));
+
+            dmService.sendMessage(1L, 10L, null, "안녕", null);
+
+            verify(dmMessageRepository).save(any(DmMessage.class));
+            ArgumentCaptor<DmRoomUpdatedEvent> captor = ArgumentCaptor.forClass(DmRoomUpdatedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            DmRoomUpdatedEvent event = captor.getValue();
+            assertThat(event.roomId()).isEqualTo(10L);
+            assertThat(event.targetUserIds()).containsExactlyInAnyOrder(1L, 2L);
+        }
+
+        @Test
+        @DisplayName("roomId null + targetNickname - 방이 없으면 get-or-create 후 저장, resolved roomId 응답 + 이벤트 publish")
+        void sendMessage_draft_createsRoom() {
+            User sender = mock(User.class);
+            User target = mock(User.class);
+            when(sender.getId()).thenReturn(1L);
+            when(target.getId()).thenReturn(2L);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
+            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
+            when(followRepository.existsByFollowerAndFollowing(sender, target)).thenReturn(true);
+            when(dmRoomRepository.findByUsers(sender, target)).thenReturn(Optional.empty());
+
+            DmRoom savedRoom = mock(DmRoom.class);
+            when(savedRoom.getId()).thenReturn(7L);
+            when(savedRoom.getUser1()).thenReturn(sender);
+            when(savedRoom.getUser2()).thenReturn(target);
+            when(dmRoomRepository.save(any(DmRoom.class))).thenReturn(savedRoom);
+
+            dmService.sendMessage(1L, null, "냥집사", "첫 메시지", null);
+
+            verify(dmRoomRepository).save(any(DmRoom.class));
+            verify(dmMessageRepository).save(any(DmMessage.class));
+            ArgumentCaptor<DmRoomUpdatedEvent> captor = ArgumentCaptor.forClass(DmRoomUpdatedEvent.class);
+            verify(eventPublisher).publishEvent(captor.capture());
+            assertThat(captor.getValue().roomId()).isEqualTo(7L);
+            assertThat(captor.getValue().targetUserIds()).containsExactlyInAnyOrder(1L, 2L);
+        }
+
+        @Test
+        @DisplayName("roomId null + targetNickname null - BAD_REQUEST")
+        void sendMessage_draft_noTarget_throws() {
+            User sender = mock(User.class);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
+
+            assertThatThrownBy(() -> dmService.sendMessage(1L, null, null, "내용", null))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(ErrorCode.BAD_REQUEST));
+            verify(dmMessageRepository, never()).save(any(DmMessage.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("markAsRead 메서드")
+    class MarkAsReadTest {
+
+        @Test
+        @DisplayName("참여자가 아니면 FORBIDDEN")
+        void markAsRead_notParticipant() {
             DmRoom room = mock(DmRoom.class);
             when(room.isParticipant(3L)).thenReturn(false);
             when(dmRoomRepository.findById(1L)).thenReturn(Optional.of(room));
 
-            assertThatThrownBy(() -> dmService.sendMessage(3L, 1L, "테스트", null))
+            assertThatThrownBy(() -> dmService.markAsRead(3L, 1L))
                     .isInstanceOf(BusinessException.class);
+        }
+
+        @Test
+        @DisplayName("markAllAsRead > 0 시 DmMessagesReadEvent + DmRoomUpdatedEvent(본인) 둘 다 publish")
+        void markAsRead_marked_publishesBothEvents() {
+            DmRoom room = mock(DmRoom.class);
+            User user = mock(User.class);
+            when(room.getId()).thenReturn(10L);
+            when(room.isParticipant(1L)).thenReturn(true);
+            when(dmRoomRepository.findById(10L)).thenReturn(Optional.of(room));
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(user.getId()).thenReturn(1L);
+            when(user.getNickname()).thenReturn("멍집사");
+            when(dmMessageRepository.markAllAsRead(room, user)).thenReturn(3);
+
+            dmService.markAsRead(1L, 10L);
+
+            ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+            verify(eventPublisher, times(2)).publishEvent(captor.capture());
+
+            DmMessagesReadEvent readEvent = captor.getAllValues().stream()
+                    .filter(DmMessagesReadEvent.class::isInstance)
+                    .map(DmMessagesReadEvent.class::cast)
+                    .findFirst().orElseThrow();
+            assertThat(readEvent.roomId()).isEqualTo(10L);
+            assertThat(readEvent.readerNickname()).isEqualTo("멍집사");
+
+            DmRoomUpdatedEvent updatedEvent = captor.getAllValues().stream()
+                    .filter(DmRoomUpdatedEvent.class::isInstance)
+                    .map(DmRoomUpdatedEvent.class::cast)
+                    .findFirst().orElseThrow();
+            assertThat(updatedEvent.roomId()).isEqualTo(10L);
+            assertThat(updatedEvent.targetUserIds()).containsExactly(1L);
+        }
+
+        @Test
+        @DisplayName("markAllAsRead == 0 시 어떤 이벤트도 미publish")
+        void markAsRead_nothing_noEvent() {
+            DmRoom room = mock(DmRoom.class);
+            User user = mock(User.class);
+            when(room.isParticipant(1L)).thenReturn(true);
+            when(dmRoomRepository.findById(10L)).thenReturn(Optional.of(room));
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(dmMessageRepository.markAllAsRead(room, user)).thenReturn(0);
+
+            dmService.markAsRead(1L, 10L);
+
+            verify(eventPublisher, never()).publishEvent(any());
         }
     }
 
@@ -151,7 +322,7 @@ class DmServiceImplTest {
     class GetMessagesTest {
 
         @Test
-        @DisplayName("메시지 조회 - 참여자가 아니면 FORBIDDEN")
+        @DisplayName("참여자가 아니면 FORBIDDEN")
         void getMessages_notParticipant() {
             DmRoom room = mock(DmRoom.class);
             when(room.isParticipant(3L)).thenReturn(false);
@@ -162,13 +333,15 @@ class DmServiceImplTest {
         }
 
         @Test
-        @DisplayName("markAllAsRead가 1 이상 반환 시 eventPublisher.publishEvent 호출 - roomId/readerNickname 검증")
-        void getMessages_markedRead_publishesEvent() {
+        @DisplayName("markAllAsRead > 0 시 읽음 이벤트 2종 publish")
+        void getMessages_markedRead_publishesEvents() {
             DmRoom room = mock(DmRoom.class);
             User user = mock(User.class);
+            when(room.getId()).thenReturn(10L);
             when(room.isParticipant(1L)).thenReturn(true);
             when(dmRoomRepository.findById(10L)).thenReturn(Optional.of(room));
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(user.getId()).thenReturn(1L);
             when(user.getNickname()).thenReturn("멍집사");
             when(dmMessageRepository.markAllAsRead(room, user)).thenReturn(3);
             when(dmMessageRepository.findAllByRoomOrderByCreatedAtDesc(eq(room), any()))
@@ -176,16 +349,11 @@ class DmServiceImplTest {
 
             dmService.getMessages(10L, 1L, 0, 50);
 
-            ArgumentCaptor<DmMessagesReadEvent> captor = ArgumentCaptor.forClass(DmMessagesReadEvent.class);
-            verify(eventPublisher).publishEvent(captor.capture());
-            DmMessagesReadEvent event = captor.getValue();
-            assertThat(event.roomId()).isEqualTo(10L);
-            assertThat(event.readerNickname()).isEqualTo("멍집사");
-            assertThat(event.readAt()).isNotNull();
+            verify(eventPublisher, times(2)).publishEvent(any(Object.class));
         }
 
         @Test
-        @DisplayName("markAllAsRead가 0 반환 시 eventPublisher.publishEvent 미호출")
+        @DisplayName("markAllAsRead == 0 시 이벤트 미publish")
         void getMessages_nothingRead_noEvent() {
             DmRoom room = mock(DmRoom.class);
             User user = mock(User.class);
