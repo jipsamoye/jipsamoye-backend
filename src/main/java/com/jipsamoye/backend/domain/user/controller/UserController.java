@@ -3,6 +3,7 @@ package com.jipsamoye.backend.domain.user.controller;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.user.dto.request.UserUpdateRequest;
 import com.jipsamoye.backend.domain.user.dto.response.UserResponse;
+import com.jipsamoye.backend.domain.user.dto.response.UserSearchItem;
 import com.jipsamoye.backend.domain.user.service.UserService;
 import com.jipsamoye.backend.global.config.security.CustomUserDetails;
 import com.jipsamoye.backend.global.response.ApiResponse;
@@ -11,15 +12,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "User", description = "유저 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users")
+@Validated
 public class UserController {
 
     private final UserService userService;
@@ -41,6 +46,18 @@ public class UserController {
             @Valid @RequestBody UserUpdateRequest request) {
         UserResponse response = userService.updateProfile(userDetails.getUserId(), request);
         return ResponseEntity.ok(ApiResponse.success("프로필 수정 성공", response));
+    }
+
+    @Operation(summary = "유저 검색", description = "닉네임 부분일치(대소문자 무시)로 유저를 검색합니다. 본인·탈퇴 유저는 제외하며, 정확>접두>부분 순으로 정렬합니다.")
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<PageResponse<UserSearchItem>>> searchUsers(
+            @Parameter(description = "검색 키워드 (닉네임)") @RequestParam String q,
+            @Parameter(description = "페이지 번호 (0부터)") @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "페이지 크기 (1~50)") @RequestParam(defaultValue = "20") @Min(1) @Max(50) int size,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long currentUserId = userDetails != null ? userDetails.getUserId() : null;
+        PageResponse<UserSearchItem> response = userService.searchUsers(q, currentUserId, page, size);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @Operation(summary = "닉네임 중복 확인", description = "닉네임 사용 가능 여부를 확인합니다.")

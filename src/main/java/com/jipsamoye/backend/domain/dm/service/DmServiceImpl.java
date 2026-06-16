@@ -8,7 +8,6 @@ import com.jipsamoye.backend.domain.dm.event.DmMessagesReadEvent;
 import com.jipsamoye.backend.domain.dm.event.DmRoomUpdatedEvent;
 import com.jipsamoye.backend.domain.dm.repository.DmMessageRepository;
 import com.jipsamoye.backend.domain.dm.repository.DmRoomRepository;
-import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
@@ -32,7 +31,6 @@ public class DmServiceImpl implements DmService {
     private final DmRoomRepository dmRoomRepository;
     private final DmMessageRepository dmMessageRepository;
     private final UserRepository userRepository;
-    private final FollowRepository followRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -200,9 +198,6 @@ public class DmServiceImpl implements DmService {
     private void validateDmTarget(User user, User target) {
         if (user.getId().equals(target.getId())) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "자기 자신에게 DM을 보낼 수 없습니다.");
-        }
-        if (!followRepository.existsByFollowerAndFollowing(user, target)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "팔로우한 사용자에게만 DM을 보낼 수 있습니다.");
         }
     }
 }
