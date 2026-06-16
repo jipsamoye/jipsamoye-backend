@@ -38,7 +38,6 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AuthServiceImpl implements AuthService {
 
-    private static final int NICKNAME_MAX_LENGTH = 10;
     private static final int NICKNAME_RETRY_LIMIT = 5;
 
     private final UserRepository userRepository;
@@ -105,7 +104,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (isNewUser) {
             // 4. 신규 가입 처리
-            String nickname = resolveNickname(profile.nickname());
+            String nickname = generateRandomNickname();
             String email = (profile.email() != null && !profile.email().isBlank())
                     ? profile.email()
                     : "naver_" + profile.id() + "@jipsamoye.com";
@@ -138,20 +137,10 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * 네이버 닉네임으로부터 사용 가능한 닉네임을 결정한다.
-     * - 10자 초과 시 truncate
-     * - null·중복이면 "집사" + UUID 6자리로 자동 생성 (최대 5회 재시도)
+     * 가입 시 항상 "집사" + UUID 6자리 랜덤 닉네임을 생성한다.
+     * 네이버 닉네임에 의존하지 않으며, 중복 시 최대 5회 재시도한다.
      */
-    private String resolveNickname(String naverNickname) {
-        if (naverNickname != null && !naverNickname.isBlank()) {
-            String truncated = naverNickname.length() > NICKNAME_MAX_LENGTH
-                    ? naverNickname.substring(0, NICKNAME_MAX_LENGTH)
-                    : naverNickname;
-            if (!userRepository.existsByNickname(truncated)) {
-                return truncated;
-            }
-        }
-
+    private String generateRandomNickname() {
         for (int i = 0; i < NICKNAME_RETRY_LIMIT; i++) {
             String candidate = "집사" + UUID.randomUUID().toString().substring(0, 6);
             if (!userRepository.existsByNickname(candidate)) {
