@@ -31,11 +31,6 @@ public interface PetPostService {
 
     SliceResponse<PetPostListResponse> searchPosts(String keyword, int page, int size);
 
-    /**
-     * 오늘의 멍냥 — 스케줄러가 1시간마다 캐싱한 데이터 반환 (DB 직접 조회 X)
-     */
-    List<PetPostListResponse> getPopularPosts();
-
     List<PetPostListResponse> getTop10Posts();
 
     PageResponse<PetPostListResponse> getFeed(Long userId, int page, int size);

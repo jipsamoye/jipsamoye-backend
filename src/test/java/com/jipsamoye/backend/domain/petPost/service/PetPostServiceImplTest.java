@@ -13,7 +13,6 @@ import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.response.CursorResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import com.jipsamoye.backend.global.response.SliceResponse;
-import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +49,6 @@ class PetPostServiceImplTest {
     @Mock private LikeRepository likeRepository;
     @Mock private CommentRepository commentRepository;
     @Mock private ImageService imageService;
-    @Mock private PopularPostScheduler popularPostScheduler;
 
     private static User activeUser() {
         return User.builder()
