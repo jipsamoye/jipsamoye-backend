@@ -7,7 +7,6 @@ import com.jipsamoye.backend.domain.dm.event.DmMessagesReadEvent;
 import com.jipsamoye.backend.domain.dm.event.DmRoomUpdatedEvent;
 import com.jipsamoye.backend.domain.dm.repository.DmMessageRepository;
 import com.jipsamoye.backend.domain.dm.repository.DmRoomRepository;
-import com.jipsamoye.backend.domain.follow.repository.FollowRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import com.jipsamoye.backend.global.code.ErrorCode;
@@ -46,9 +45,6 @@ class DmServiceImplTest {
     private UserRepository userRepository;
 
     @Mock
-    private FollowRepository followRepository;
-
-    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Nested
@@ -65,7 +61,6 @@ class DmServiceImplTest {
             when(target.getNickname()).thenReturn("냥집사");
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
-            when(followRepository.existsByFollowerAndFollowing(user, target)).thenReturn(true);
 
             DmRoom existingRoom = mock(DmRoom.class);
             when(existingRoom.getId()).thenReturn(5L);
@@ -96,7 +91,6 @@ class DmServiceImplTest {
             when(target.getNickname()).thenReturn("냥집사");
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
-            when(followRepository.existsByFollowerAndFollowing(user, target)).thenReturn(true);
 
             DmRoom existingRoom = mock(DmRoom.class);
             when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.of(existingRoom));
@@ -121,7 +115,6 @@ class DmServiceImplTest {
             when(target.getProfileImageUrl()).thenReturn("http://img");
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
-            when(followRepository.existsByFollowerAndFollowing(user, target)).thenReturn(true);
             when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
 
             DmRoomResponse response = dmService.createRoom(1L, "냥집사");
@@ -147,20 +140,21 @@ class DmServiceImplTest {
         }
 
         @Test
-        @DisplayName("미팔로우 상대에게는 FORBIDDEN 예외, save 미호출")
-        void createRoom_notFollowing_throwsForbidden() {
+        @DisplayName("미팔로우 상대도 DM 가능 - 방이 없으면 draft 응답 반환, save 미호출")
+        void createRoom_notFollowing_returnsDraft() {
             User user = mock(User.class);
             User target = mock(User.class);
             lenient().when(user.getId()).thenReturn(1L);
             lenient().when(target.getId()).thenReturn(2L);
+            when(target.getNickname()).thenReturn("낯선유저");
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.findByNickname("낯선유저")).thenReturn(Optional.of(target));
-            when(followRepository.existsByFollowerAndFollowing(user, target)).thenReturn(false);
+            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> dmService.createRoom(1L, "낯선유저"))
-                    .isInstanceOf(BusinessException.class)
-                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                            .isEqualTo(ErrorCode.FORBIDDEN));
+            DmRoomResponse response = dmService.createRoom(1L, "낯선유저");
+
+            assertThat(response.roomId()).isNull();
+            assertThat(response.otherUserNickname()).isEqualTo("낯선유저");
             verify(dmRoomRepository, never()).save(any(DmRoom.class));
         }
     }
@@ -220,7 +214,6 @@ class DmServiceImplTest {
             when(target.getId()).thenReturn(2L);
             when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
             when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
-            when(followRepository.existsByFollowerAndFollowing(sender, target)).thenReturn(true);
             when(dmRoomRepository.findByUsers(sender, target)).thenReturn(Optional.empty());
 
             DmRoom savedRoom = mock(DmRoom.class);
@@ -237,6 +230,29 @@ class DmServiceImplTest {
             verify(eventPublisher).publishEvent(captor.capture());
             assertThat(captor.getValue().roomId()).isEqualTo(7L);
             assertThat(captor.getValue().targetUserIds()).containsExactlyInAnyOrder(1L, 2L);
+        }
+
+        @Test
+        @DisplayName("미팔로우 상대에게도 draft 전송 가능 - 방 생성·메시지 저장")
+        void sendMessage_draft_notFollowing_createsRoom() {
+            User sender = mock(User.class);
+            User target = mock(User.class);
+            when(sender.getId()).thenReturn(1L);
+            when(target.getId()).thenReturn(2L);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
+            when(userRepository.findByNickname("낯선유저")).thenReturn(Optional.of(target));
+            when(dmRoomRepository.findByUsers(sender, target)).thenReturn(Optional.empty());
+
+            DmRoom savedRoom = mock(DmRoom.class);
+            when(savedRoom.getId()).thenReturn(9L);
+            when(savedRoom.getUser1()).thenReturn(sender);
+            when(savedRoom.getUser2()).thenReturn(target);
+            when(dmRoomRepository.save(any(DmRoom.class))).thenReturn(savedRoom);
+
+            dmService.sendMessage(1L, null, "낯선유저", "안녕 처음 봐요", null);
+
+            verify(dmRoomRepository).save(any(DmRoom.class));
+            verify(dmMessageRepository).save(any(DmMessage.class));
         }
 
         @Test

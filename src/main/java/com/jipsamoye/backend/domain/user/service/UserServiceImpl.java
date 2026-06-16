@@ -5,6 +5,7 @@ import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 import com.jipsamoye.backend.domain.user.dto.request.UserUpdateRequest;
 import com.jipsamoye.backend.domain.user.dto.response.UserResponse;
+import com.jipsamoye.backend.domain.user.dto.response.UserSearchItem;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.event.ProfileUpdatedEvent;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
@@ -17,6 +18,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -104,5 +109,49 @@ public class UserServiceImpl implements UserService {
                 .findAllByUser(user, PageRequest.of(page, size))
                 .map(PetPostListResponse::from);
         return PageResponse.from(postPage);
+    }
+
+    // 비로그인 시 본인 제외 조건이 아무도 걸러내지 않도록 쓰는 sentinel (User PK는 IDENTITY 양수)
+    private static final long NO_USER_ID = -1L;
+
+    @Override
+    public PageResponse<UserSearchItem> searchUsers(String q, Long currentUserId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size);
+
+        if (q == null || q.isBlank()) {
+            return PageResponse.from(Page.empty(pageRequest));
+        }
+
+        long meId = currentUserId != null ? currentUserId : NO_USER_ID;
+        String trimmed = q.trim();
+        // LIKE 절에는 와일드카드(%, _)와 이스케이프 문자(\)를 literal로 다루도록 이스케이프한 값을,
+        // 정확 일치(=) 비교에는 이스케이프하지 않은 원본을 넘긴다(repo의 ESCAPE '\' 절과 짝).
+        Page<User> users = userRepository.searchByNickname(
+                escapeLikePattern(trimmed), trimmed, meId, pageRequest);
+
+        Set<String> followingNicknames = Collections.emptySet();
+        if (currentUserId != null && users.hasContent()) {
+            List<String> nicknames = users.getContent().stream()
+                    .map(User::getNickname)
+                    .toList();
+            followingNicknames = followRepository.findFollowingNicknamesIn(currentUserId, nicknames);
+        }
+
+        Set<String> following = followingNicknames;
+        Page<UserSearchItem> itemPage = users
+                .map(user -> UserSearchItem.of(user, following.contains(user.getNickname())));
+        return PageResponse.from(itemPage);
+    }
+
+    /**
+     * LIKE 패턴에서 와일드카드(%, _)와 이스케이프 문자(\)를 literal로 매칭하도록 이스케이프한다.
+     * repo JPQL의 {@code ESCAPE '\'}와 짝을 이룬다. 백슬래시를 먼저 치환해야 이후 치환으로
+     * 추가된 백슬래시가 이중 이스케이프되지 않는다.
+     */
+    private static String escapeLikePattern(String input) {
+        return input
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 }
