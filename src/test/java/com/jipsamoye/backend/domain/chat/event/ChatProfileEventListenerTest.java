@@ -1,5 +1,6 @@
 package com.jipsamoye.backend.domain.chat.event;
 
+import com.jipsamoye.backend.domain.chat.dto.response.ChatProfileUpdatedMessage;
 import com.jipsamoye.backend.domain.user.event.ProfileUpdatedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,8 +10,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -26,19 +25,20 @@ class ChatProfileEventListenerTest {
     private SimpMessagingTemplate messagingTemplate;
 
     @Test
-    @DisplayName("프로필 변경 이벤트 수신 시 /sub/chat/room으로 PROFILE_UPDATED 전송")
+    @DisplayName("프로필 변경 이벤트 수신 시 /sub/chat/room으로 타입 있는 PROFILE_UPDATED 메시지 전송")
     void handleProfileUpdate_sendsWebSocketMessage() {
         ProfileUpdatedEvent event = new ProfileUpdatedEvent(1L, "새닉네임", "https://new-image.jpg");
 
         listener.handleProfileUpdate(event);
 
-        ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<ChatProfileUpdatedMessage> captor =
+                ArgumentCaptor.forClass(ChatProfileUpdatedMessage.class);
         verify(messagingTemplate).convertAndSend(eq("/sub/chat/room"), captor.capture());
 
-        Map<String, Object> payload = captor.getValue();
-        assertThat(payload.get("type")).isEqualTo("PROFILE_UPDATED");
-        assertThat(payload.get("nickname")).isEqualTo("새닉네임");
-        assertThat(payload.get("profileImageUrl")).isEqualTo("https://new-image.jpg");
+        ChatProfileUpdatedMessage payload = captor.getValue();
+        assertThat(payload.type()).isEqualTo("PROFILE_UPDATED");
+        assertThat(payload.nickname()).isEqualTo("새닉네임");
+        assertThat(payload.profileImageUrl()).isEqualTo("https://new-image.jpg");
     }
 
     @Test
@@ -48,9 +48,10 @@ class ChatProfileEventListenerTest {
 
         listener.handleProfileUpdate(event);
 
-        ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<ChatProfileUpdatedMessage> captor =
+                ArgumentCaptor.forClass(ChatProfileUpdatedMessage.class);
         verify(messagingTemplate).convertAndSend(eq("/sub/chat/room"), captor.capture());
 
-        assertThat(captor.getValue().get("profileImageUrl")).isEqualTo("");
+        assertThat(captor.getValue().profileImageUrl()).isEqualTo("");
     }
 }

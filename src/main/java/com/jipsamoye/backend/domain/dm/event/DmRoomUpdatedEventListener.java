@@ -5,6 +5,7 @@ import com.jipsamoye.backend.domain.dm.entity.DmMessage;
 import com.jipsamoye.backend.domain.dm.entity.DmRoom;
 import com.jipsamoye.backend.domain.dm.repository.DmMessageRepository;
 import com.jipsamoye.backend.domain.dm.repository.DmRoomRepository;
+import com.jipsamoye.backend.domain.dm.service.DmRoomResponseMapper;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -51,14 +52,8 @@ public class DmRoomUpdatedEventListener {
                     : room.getUser1();
             long unread = dmMessageRepository.countUnread(room, target);
 
-            DmRoomResponse payload = new DmRoomResponse(
-                    room.getId(),
-                    other.getNickname(),
-                    other.getProfileImageUrl(),
-                    lastMsg.map(DmMessage::getContent).orElse(null),
-                    lastMsg.map(DmMessage::getCreatedAt).orElse(null),
-                    unread
-            );
+            DmRoomResponse payload = DmRoomResponseMapper.of(
+                    room.getId(), other, lastMsg.orElse(null), unread);
 
             messagingTemplate.convertAndSendToUser(
                     String.valueOf(targetUserId),
