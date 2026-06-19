@@ -47,6 +47,9 @@ class DmServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private DmRoomResolver dmRoomResolver;
+
     @Nested
     @DisplayName("createRoom 메서드 (resolve)")
     class CreateRoomTest {
@@ -206,7 +209,7 @@ class DmServiceImplTest {
         }
 
         @Test
-        @DisplayName("roomId null + targetNickname - 방이 없으면 get-or-create 후 저장, resolved roomId 응답 + 이벤트 publish")
+        @DisplayName("roomId null + targetNickname - resolver가 방을 resolve하면 그 roomId로 메시지 저장 + 이벤트 publish")
         void sendMessage_draft_createsRoom() {
             User sender = mock(User.class);
             User target = mock(User.class);
@@ -214,17 +217,18 @@ class DmServiceImplTest {
             when(target.getId()).thenReturn(2L);
             when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
             when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
-            when(dmRoomRepository.findByUsers(sender, target)).thenReturn(Optional.empty());
 
-            DmRoom savedRoom = mock(DmRoom.class);
-            when(savedRoom.getId()).thenReturn(7L);
-            when(savedRoom.getUser1()).thenReturn(sender);
-            when(savedRoom.getUser2()).thenReturn(target);
-            when(dmRoomRepository.save(any(DmRoom.class))).thenReturn(savedRoom);
+            when(dmRoomResolver.resolveOrCreateRoomId(sender, target)).thenReturn(7L);
+
+            DmRoom resolvedRoom = mock(DmRoom.class);
+            when(resolvedRoom.getId()).thenReturn(7L);
+            when(resolvedRoom.getUser1()).thenReturn(sender);
+            when(resolvedRoom.getUser2()).thenReturn(target);
+            when(dmRoomRepository.findById(7L)).thenReturn(Optional.of(resolvedRoom));
 
             dmService.sendMessage(1L, null, "냥집사", "첫 메시지", null);
 
-            verify(dmRoomRepository).save(any(DmRoom.class));
+            verify(dmRoomResolver).resolveOrCreateRoomId(sender, target);
             verify(dmMessageRepository).save(any(DmMessage.class));
             ArgumentCaptor<DmRoomUpdatedEvent> captor = ArgumentCaptor.forClass(DmRoomUpdatedEvent.class);
             verify(eventPublisher).publishEvent(captor.capture());
@@ -233,7 +237,7 @@ class DmServiceImplTest {
         }
 
         @Test
-        @DisplayName("미팔로우 상대에게도 draft 전송 가능 - 방 생성·메시지 저장")
+        @DisplayName("미팔로우 상대에게도 draft 전송 가능 - resolver로 방 resolve·메시지 저장")
         void sendMessage_draft_notFollowing_createsRoom() {
             User sender = mock(User.class);
             User target = mock(User.class);
@@ -241,17 +245,18 @@ class DmServiceImplTest {
             when(target.getId()).thenReturn(2L);
             when(userRepository.findById(1L)).thenReturn(Optional.of(sender));
             when(userRepository.findByNickname("낯선유저")).thenReturn(Optional.of(target));
-            when(dmRoomRepository.findByUsers(sender, target)).thenReturn(Optional.empty());
 
-            DmRoom savedRoom = mock(DmRoom.class);
-            when(savedRoom.getId()).thenReturn(9L);
-            when(savedRoom.getUser1()).thenReturn(sender);
-            when(savedRoom.getUser2()).thenReturn(target);
-            when(dmRoomRepository.save(any(DmRoom.class))).thenReturn(savedRoom);
+            when(dmRoomResolver.resolveOrCreateRoomId(sender, target)).thenReturn(9L);
+
+            DmRoom resolvedRoom = mock(DmRoom.class);
+            when(resolvedRoom.getId()).thenReturn(9L);
+            when(resolvedRoom.getUser1()).thenReturn(sender);
+            when(resolvedRoom.getUser2()).thenReturn(target);
+            when(dmRoomRepository.findById(9L)).thenReturn(Optional.of(resolvedRoom));
 
             dmService.sendMessage(1L, null, "낯선유저", "안녕 처음 봐요", null);
 
-            verify(dmRoomRepository).save(any(DmRoom.class));
+            verify(dmRoomResolver).resolveOrCreateRoomId(sender, target);
             verify(dmMessageRepository).save(any(DmMessage.class));
         }
 

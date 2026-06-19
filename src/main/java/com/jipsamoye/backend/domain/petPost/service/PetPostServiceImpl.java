@@ -16,7 +16,6 @@ import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.CursorResponse;
 import com.jipsamoye.backend.global.response.PageResponse;
 import com.jipsamoye.backend.global.response.SliceResponse;
-import com.jipsamoye.backend.global.scheduler.PopularPostScheduler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,7 +37,6 @@ public class PetPostServiceImpl implements PetPostService {
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
     private final ImageService imageService;
-    private final PopularPostScheduler popularPostScheduler;
 
     @Override
     @Transactional
@@ -157,11 +155,6 @@ public class PetPostServiceImpl implements PetPostService {
                 .searchByTitleFulltext(phraseQuery, pageRequest)
                 .map(PetPostListResponse::from);
         return SliceResponse.from(postSlice);
-    }
-
-    @Override
-    public java.util.List<PetPostListResponse> getPopularPosts() {
-        return popularPostScheduler.getPopularPosts();
     }
 
     @Override

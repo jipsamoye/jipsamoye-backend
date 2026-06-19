@@ -54,12 +54,6 @@ public class PetPostController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    @Operation(summary = "오늘의 멍냥", description = "최근 24시간 내 좋아요 수 상위 게시글을 조회합니다. 1시간 단위 갱신.")
-    @GetMapping("/popular")
-    public ResponseEntity<ApiResponse<java.util.List<PetPostListResponse>>> getPopularPosts() {
-        return ResponseEntity.ok(ApiResponse.success(petPostService.getPopularPosts()));
-    }
-
     @Operation(summary = "좋아요 TOP 10", description = "좋아요 수 기준 상위 10개 게시글을 조회합니다.")
     @GetMapping("/top10")
     public ResponseEntity<ApiResponse<java.util.List<PetPostListResponse>>> getTop10Posts() {

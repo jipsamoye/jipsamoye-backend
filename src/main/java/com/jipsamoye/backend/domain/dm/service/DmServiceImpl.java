@@ -32,6 +32,7 @@ public class DmServiceImpl implements DmService {
     private final DmMessageRepository dmMessageRepository;
     private final UserRepository userRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final DmRoomResolver dmRoomResolver;
 
     @Override
     public List<DmRoomResponse> getRooms(Long userId) {
@@ -141,11 +142,10 @@ public class DmServiceImpl implements DmService {
 
             validateDmTarget(sender, target);
 
-            room = dmRoomRepository.findByUsers(sender, target)
-                    .orElseGet(() -> dmRoomRepository.save(DmRoom.builder()
-                            .user1(sender)
-                            .user2(target)
-                            .build()));
+            // find-or-create는 키 정규화 + retry-on-conflict로 경쟁 조건을 막는 별도 트랜잭션에 위임한다.
+            Long resolvedRoomId = dmRoomResolver.resolveOrCreateRoomId(sender, target);
+            room = dmRoomRepository.findById(resolvedRoomId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.BAD_REQUEST, "채팅방을 찾을 수 없습니다."));
         }
 
         DmMessage message = DmMessage.builder()
