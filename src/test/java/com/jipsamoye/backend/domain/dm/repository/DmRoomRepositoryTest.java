@@ -118,6 +118,42 @@ class DmRoomRepositoryTest {
     }
 
     @Nested
+    @DisplayName("existsByIdAndParticipant - 구독 인가용 참여자 확인")
+    class ExistsByIdAndParticipant {
+
+        @Test
+        @DisplayName("user1로 저장된 참여자 - true")
+        void user1_isParticipant() {
+            DmRoom room = newRoom(user1, user2);
+
+            assertThat(dmRoomRepository.existsByIdAndParticipant(room.getId(), user1.getId())).isTrue();
+        }
+
+        @Test
+        @DisplayName("user2로 저장된 참여자 - true (양방향)")
+        void user2_isParticipant() {
+            DmRoom room = newRoom(user1, user2);
+
+            assertThat(dmRoomRepository.existsByIdAndParticipant(room.getId(), user2.getId())).isTrue();
+        }
+
+        @Test
+        @DisplayName("비참여자 - false")
+        void outsider_isNotParticipant() {
+            User user3 = userRepository.save(newUser("user3", "u3@test.com", "pid3"));
+            DmRoom room = newRoom(user1, user2);
+
+            assertThat(dmRoomRepository.existsByIdAndParticipant(room.getId(), user3.getId())).isFalse();
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 roomId - false")
+        void nonExistentRoom_false() {
+            assertThat(dmRoomRepository.existsByIdAndParticipant(999999L, user1.getId())).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("빈 방과 메시지 있는 방 혼재")
     class MixedRooms {
 
