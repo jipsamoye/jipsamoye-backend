@@ -36,24 +36,14 @@ public class DmServiceImpl implements DmService {
 
     @Override
     public List<DmRoomResponse> getRooms(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (!userRepository.existsById(userId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
 
-        return dmRoomRepository.findAllByUser(user).stream()
-                .map(room -> {
-                    User other = room.getUser1().getId().equals(userId) ? room.getUser2() : room.getUser1();
-                    var lastMsg = dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(room);
-                    long unread = dmMessageRepository.countUnread(room, user);
-
-                    return new DmRoomResponse(
-                            room.getId(),
-                            other.getNickname(),
-                            other.getProfileImageUrl(),
-                            lastMsg.map(DmMessage::getContent).orElse(null),
-                            lastMsg.map(DmMessage::getCreatedAt).orElse(null),
-                            unread
-                    );
-                })
+        // 방 목록을 단일 프로젝션 쿼리로 가져와 N+1(방당 마지막 메시지·unread·LAZY 상대방)을 제거한다.
+        // findRoomSummaries는 findAllByUser와 동일한 필터(참여 방·EXISTS message)·정렬(updatedAt DESC)을 보존한다.
+        return dmRoomRepository.findRoomSummaries(userId).stream()
+                .map(DmRoomResponseMapper::from)
                 .toList();
     }
 
@@ -77,26 +67,12 @@ public class DmServiceImpl implements DmService {
             DmMessage lastMsg = dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(existing).orElse(null);
             if (lastMsg != null) {
                 long unread = dmMessageRepository.countUnread(existing, user);
-                return new DmRoomResponse(
-                        existing.getId(),
-                        target.getNickname(),
-                        target.getProfileImageUrl(),
-                        lastMsg.getContent(),
-                        lastMsg.getCreatedAt(),
-                        unread
-                );
+                return DmRoomResponseMapper.of(existing.getId(), target, lastMsg, unread);
             }
         }
 
-        // 방이 없거나 빈 방 → 저장 없이 draft 응답
-        return new DmRoomResponse(
-                null,
-                target.getNickname(),
-                target.getProfileImageUrl(),
-                null,
-                null,
-                0
-        );
+        // 방이 없거나 빈 방 → 저장 없이 draft 응답(roomId=null, 마지막 메시지 없음)
+        return DmRoomResponseMapper.of(null, target, null, 0);
     }
 
     @Override

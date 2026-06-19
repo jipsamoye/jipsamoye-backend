@@ -5,6 +5,8 @@ import com.jipsamoye.backend.domain.dm.dto.request.DmSendRequest;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageEvent;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageResponse;
 import com.jipsamoye.backend.domain.dm.service.DmService;
+import com.jipsamoye.backend.global.code.ErrorCode;
+import com.jipsamoye.backend.global.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -106,6 +109,21 @@ class DmWebSocketControllerTest {
             assertThat(eventCaptor.getValue().message().roomId()).isEqualTo(99L);
             assertThat(eventCaptor.getValue().message().clientMessageId()).isEqualTo("cid-draft");
         }
+
+        @Test
+        @DisplayName("세션 userId가 없으면 UNAUTHORIZED, 서비스·broadcast 미호출")
+        void sendMessage_nullUserId_throwsUnauthorized() {
+            DmSendRequest request = new DmSendRequest(1L, null, "안녕", null, "cid");
+            SimpMessageHeaderAccessor accessor = headerAccessorWithUserId(null);
+
+            assertThatThrownBy(() -> controller.sendMessage(request, accessor))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(ErrorCode.UNAUTHORIZED));
+
+            verifyNoInteractions(dmService);
+            verifyNoInteractions(messagingTemplate);
+        }
     }
 
     @Nested
@@ -122,6 +140,20 @@ class DmWebSocketControllerTest {
 
             verify(dmService).markAsRead(7L, 55L);
             verifyNoInteractions(messagingTemplate);
+        }
+
+        @Test
+        @DisplayName("세션 userId가 없으면 UNAUTHORIZED, markAsRead 미호출")
+        void read_nullUserId_throwsUnauthorized() {
+            DmReadRequest request = new DmReadRequest(55L);
+            SimpMessageHeaderAccessor accessor = headerAccessorWithUserId(null);
+
+            assertThatThrownBy(() -> controller.read(request, accessor))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(ErrorCode.UNAUTHORIZED));
+
+            verifyNoInteractions(dmService);
         }
     }
 }
