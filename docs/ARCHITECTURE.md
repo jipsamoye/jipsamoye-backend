@@ -64,6 +64,7 @@ Spring Boot (Docker)
 | `board` | 자유게시판 CRUD (일반/질문 카테고리) | `Board` |
 | `boardComment` | 자유게시판 댓글 CRUD | `BoardComment` |
 | `boardLike` | 자유게시판 좋아요 토글 | `BoardLike` |
+| `figurine` | AI 키캡 이미지 생성(OpenAI gpt-image-1 비동기), 자랑 피드 자동 게시 | `FigurineJob` |
 
 ---
 

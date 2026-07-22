@@ -32,3 +32,6 @@ naver:
   oauth:
     client-id: ${NAVER_CLIENT_ID}
     client-secret: ${NAVER_CLIENT_SECRET}
+
+openai:
+  api-key: ${OPENAI_API_KEY}
