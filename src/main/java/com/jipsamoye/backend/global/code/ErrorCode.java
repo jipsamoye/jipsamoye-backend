@@ -12,6 +12,7 @@ public enum ErrorCode {
     INVALID_INPUT(400, "INVALID_INPUT", "입력값이 유효하지 않습니다."),
     INVALID_FILE(400, "INVALID_FILE", "올바르지 않은 파일입니다."),
     MISSING_PARAMETER(400, "MISSING_PARAMETER", "필수 파라미터가 누락되었습니다."),
+    FIGURINE_JOB_NOT_COMPLETED(400, "FIGURINE_JOB_NOT_COMPLETED", "아직 완료되지 않은 생성 작업입니다."),
 
     // 401
     UNAUTHORIZED(401, "UNAUTHORIZED", "로그인이 필요합니다."),
@@ -27,6 +28,7 @@ public enum ErrorCode {
     COMMENT_NOT_FOUND(404, "COMMENT_NOT_FOUND", "댓글을 찾을 수 없습니다."),
     BOARD_NOT_FOUND(404, "BOARD_NOT_FOUND", "게시글을 찾을 수 없습니다."),
     BOARD_COMMENT_NOT_FOUND(404, "BOARD_COMMENT_NOT_FOUND", "댓글을 찾을 수 없습니다."),
+    FIGURINE_JOB_NOT_FOUND(404, "FIGURINE_JOB_NOT_FOUND", "생성 작업을 찾을 수 없습니다."),
 
     // 405
     METHOD_NOT_ALLOWED(405, "METHOD_NOT_ALLOWED", "지원하지 않는 HTTP 메서드입니다."),
@@ -37,6 +39,7 @@ public enum ErrorCode {
     // 409
     DUPLICATE_NICKNAME(409, "DUPLICATE_NICKNAME", "이미 사용 중인 닉네임입니다."),
     DUPLICATE_LIKE(409, "DUPLICATE_LIKE", "이미 좋아요한 게시글입니다."),
+    FIGURINE_ALREADY_POSTED(409, "FIGURINE_ALREADY_POSTED", "이미 게시된 생성 작업입니다."),
 
     // 415
     UNSUPPORTED_MEDIA_TYPE(415, "UNSUPPORTED_MEDIA_TYPE", "지원하지 않는 Content-Type입니다."),
