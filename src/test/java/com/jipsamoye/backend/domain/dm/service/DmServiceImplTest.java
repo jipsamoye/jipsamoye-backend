@@ -1,5 +1,6 @@
 package com.jipsamoye.backend.domain.dm.service;
 
+import com.jipsamoye.backend.domain.dm.dto.response.DmRoomProjection;
 import com.jipsamoye.backend.domain.dm.dto.response.DmRoomResponse;
 import com.jipsamoye.backend.domain.dm.entity.DmMessage;
 import com.jipsamoye.backend.domain.dm.entity.DmRoom;
@@ -22,6 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +52,58 @@ class DmServiceImplTest {
 
     @Mock
     private DmRoomResolver dmRoomResolver;
+
+    @Nested
+    @DisplayName("getRooms 메서드")
+    class GetRoomsTest {
+
+        @Test
+        @DisplayName("존재하지 않는 유저면 USER_NOT_FOUND")
+        void getRooms_userNotFound() {
+            when(userRepository.existsById(1L)).thenReturn(false);
+
+            assertThatThrownBy(() -> dmService.getRooms(1L))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(ErrorCode.USER_NOT_FOUND));
+            verify(dmRoomRepository, never()).findRoomSummaries(any());
+        }
+
+        @Test
+        @DisplayName("프로젝션 결과를 매퍼로 DmRoomResponse 리스트로 매핑(순서·필드 보존)")
+        void getRooms_mapsProjections() {
+            LocalDateTime t1 = LocalDateTime.of(2026, 6, 19, 10, 0);
+            LocalDateTime t2 = LocalDateTime.of(2026, 6, 19, 9, 0);
+            when(userRepository.existsById(1L)).thenReturn(true);
+            when(dmRoomRepository.findRoomSummaries(1L)).thenReturn(List.of(
+                    new DmRoomProjection(10L, "상대A", "imgA", "마지막A", t1, 3L),
+                    new DmRoomProjection(20L, "상대B", null, null, t2, 0L)
+            ));
+
+            List<DmRoomResponse> rooms = dmService.getRooms(1L);
+
+            assertThat(rooms).hasSize(2);
+            assertThat(rooms.get(0).roomId()).isEqualTo(10L);
+            assertThat(rooms.get(0).otherUserNickname()).isEqualTo("상대A");
+            assertThat(rooms.get(0).otherUserProfileImageUrl()).isEqualTo("imgA");
+            assertThat(rooms.get(0).lastMessage()).isEqualTo("마지막A");
+            assertThat(rooms.get(0).lastMessageAt()).isEqualTo(t1);
+            assertThat(rooms.get(0).unreadCount()).isEqualTo(3L);
+            assertThat(rooms.get(1).roomId()).isEqualTo(20L);
+            assertThat(rooms.get(1).otherUserProfileImageUrl()).isNull();
+            assertThat(rooms.get(1).lastMessage()).isNull();
+            assertThat(rooms.get(1).unreadCount()).isEqualTo(0L);
+        }
+
+        @Test
+        @DisplayName("방이 없으면 빈 리스트")
+        void getRooms_empty() {
+            when(userRepository.existsById(1L)).thenReturn(true);
+            when(dmRoomRepository.findRoomSummaries(1L)).thenReturn(List.of());
+
+            assertThat(dmService.getRooms(1L)).isEmpty();
+        }
+    }
 
     @Nested
     @DisplayName("createRoom 메서드 (resolve)")

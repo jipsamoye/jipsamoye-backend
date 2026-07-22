@@ -5,8 +5,11 @@ import com.jipsamoye.backend.domain.dm.dto.request.DmSendRequest;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageEvent;
 import com.jipsamoye.backend.domain.dm.dto.response.DmMessageResponse;
 import com.jipsamoye.backend.domain.dm.service.DmService;
+import com.jipsamoye.backend.global.util.WsSessionUtils;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -19,8 +22,8 @@ public class DmWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping("/dm/send")
-    public void sendMessage(DmSendRequest request, SimpMessageHeaderAccessor headerAccessor) {
-        Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
+    public void sendMessage(@Valid @Payload DmSendRequest request, SimpMessageHeaderAccessor headerAccessor) {
+        Long userId = WsSessionUtils.requireUserId(headerAccessor);
         DmMessageResponse response = dmService.sendMessage(
                 userId, request.roomId(), request.targetNickname(),
                 request.content(), request.imageUrl());
@@ -31,8 +34,8 @@ public class DmWebSocketController {
     }
 
     @MessageMapping("/dm/read")
-    public void read(DmReadRequest request, SimpMessageHeaderAccessor headerAccessor) {
-        Long userId = (Long) headerAccessor.getSessionAttributes().get("userId");
+    public void read(@Valid @Payload DmReadRequest request, SimpMessageHeaderAccessor headerAccessor) {
+        Long userId = WsSessionUtils.requireUserId(headerAccessor);
         dmService.markAsRead(userId, request.roomId());
     }
 }
