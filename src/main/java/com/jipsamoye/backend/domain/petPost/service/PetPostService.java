@@ -14,6 +14,12 @@ public interface PetPostService {
 
     PetPostResponse createPost(PetPostCreateRequest request, Long userId);
 
+    /**
+     * AI 자동 생성 여부를 지정해 게시글을 만든다. aiGenerated는 클라이언트가 위조하지 못하도록
+     * 요청 DTO에 두지 않고 서버 내부 호출(figurine 자동 게시)에서만 true로 전달한다.
+     */
+    PetPostResponse createPost(PetPostCreateRequest request, Long userId, boolean aiGenerated);
+
     PetPostResponse getPost(Long id);
 
     /**

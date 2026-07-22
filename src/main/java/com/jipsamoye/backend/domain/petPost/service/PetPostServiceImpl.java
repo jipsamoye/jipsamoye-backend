@@ -41,6 +41,12 @@ public class PetPostServiceImpl implements PetPostService {
     @Override
     @Transactional
     public PetPostResponse createPost(PetPostCreateRequest request, Long userId) {
+        return createPost(request, userId, false);
+    }
+
+    @Override
+    @Transactional
+    public PetPostResponse createPost(PetPostCreateRequest request, Long userId, boolean aiGenerated) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -49,6 +55,7 @@ public class PetPostServiceImpl implements PetPostService {
                 .title(request.title())
                 .content(request.content())
                 .imageUrls(request.imageUrls())
+                .aiGenerated(aiGenerated)
                 .build();
 
         PetPost saved = petPostRepository.save(petPost);

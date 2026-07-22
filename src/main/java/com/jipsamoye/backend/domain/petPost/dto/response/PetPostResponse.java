@@ -15,7 +15,8 @@ public record PetPostResponse(
         String nickname,
         String profileImageUrl,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        boolean aiGenerated
 ) {
     // 탈퇴한 유저의 게시글은 "탈퇴한 사용자"로 표시
     public static PetPostResponse from(PetPost petPost) {
@@ -30,7 +31,8 @@ public record PetPostResponse(
                 isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname(),
                 isUserDeleted ? null : petPost.getUser().getProfileImageUrl(),
                 petPost.getCreatedAt(),
-                petPost.getUpdatedAt()
+                petPost.getUpdatedAt(),
+                petPost.isAiGenerated()
         );
     }
 }
