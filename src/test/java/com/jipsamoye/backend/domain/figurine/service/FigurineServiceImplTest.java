@@ -69,6 +69,15 @@ class FigurineServiceImplTest {
         return job;
     }
 
+    private FigurineJob ownedLockedJob(Long jobId, Long ownerId) {
+        when(user.getId()).thenReturn(ownerId);
+        FigurineJob job = FigurineJob.builder().user(user).sourceImageUrl(SOURCE_URL).build();
+        ReflectionTestUtils.setField(job, "id", jobId);
+        ReflectionTestUtils.setField(job, "createdAt", LocalDateTime.now());
+        when(figurineJobRepository.findWithLockById(jobId)).thenReturn(Optional.of(job));
+        return job;
+    }
+
     @Test
     @DisplayName("createJob은 job을 저장하고 비동기 프로세서를 호출한 뒤 PENDING을 반환한다")
     void createJob_savesAndTriggersProcessor() {
@@ -144,7 +153,7 @@ class FigurineServiceImplTest {
     @Test
     @DisplayName("publishJob은 완료된 job으로 petPost를 만들고 petPostId를 연결한다")
     void publishJob_success() {
-        FigurineJob job = ownedJob(1L, 42L);
+        FigurineJob job = ownedLockedJob(1L, 42L);
         job.complete(RESULT_URL);
         PetPostResponse post = new PetPostResponse(77L, "AI 키캡 자랑", null, List.of(RESULT_URL),
                 0, 0, "집사", null, LocalDateTime.now(), LocalDateTime.now());
@@ -163,7 +172,7 @@ class FigurineServiceImplTest {
     @Test
     @DisplayName("publishJob은 미완료 job이면 FIGURINE_JOB_NOT_COMPLETED를 던진다")
     void publishJob_notCompleted_throws() {
-        ownedJob(1L, 42L);
+        ownedLockedJob(1L, 42L);
 
         assertThatThrownBy(() -> figurineService.publishJob(1L, 42L))
                 .isInstanceOf(BusinessException.class)
@@ -174,7 +183,7 @@ class FigurineServiceImplTest {
     @Test
     @DisplayName("publishJob은 이미 게시된 job이면 FIGURINE_ALREADY_POSTED를 던진다")
     void publishJob_alreadyPosted_throws() {
-        FigurineJob job = ownedJob(1L, 42L);
+        FigurineJob job = ownedLockedJob(1L, 42L);
         job.complete(RESULT_URL);
         job.linkPetPost(77L);
 
@@ -182,5 +191,27 @@ class FigurineServiceImplTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
                         .isEqualTo(ErrorCode.FIGURINE_ALREADY_POSTED));
+    }
+
+    @Test
+    @DisplayName("publishJob은 존재하지 않는 job이면 FIGURINE_JOB_NOT_FOUND를 던진다")
+    void publishJob_notFound_throws() {
+        when(figurineJobRepository.findWithLockById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> figurineService.publishJob(1L, 42L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.FIGURINE_JOB_NOT_FOUND));
+    }
+
+    @Test
+    @DisplayName("createJob은 본인 posts 경로가 아닌 이미지면 BAD_REQUEST를 던지고 프로세서를 호출하지 않는다")
+    void createJob_notOwnPath_throws() {
+        assertThatThrownBy(() -> figurineService.createJob(
+                new FigurineJobCreateRequest(CDN + "/posts/99/abc.jpg"), 42L))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> assertThat(((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.BAD_REQUEST));
+        verify(figurineJobProcessor, never()).process(any(), any());
     }
 }

@@ -37,6 +37,8 @@ GitHub Actions 자동배포 (EC2 + Docker Blue-Green)
 > 1. **GitHub Secrets** → `HOST` 값을 새 IP로 변경 (GitHub Actions 배포에 사용)
 > 2. **Cloudflare DNS** → A 레코드의 IP를 새 IP로 변경
 
+> **필수 GitHub Secrets**: `DB_PASSWORD`, `AWS_ACCESS_KEY`, `AWS_SECRET_KEY`, `AWS_S3_BUCKET`, `DISCORD_WEBHOOK_URL`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `OPENAI_API_KEY` (배포 시 `.env`로 주입 — 누락 시 운영 부팅 실패)
+
 ## 인프라 구성
 
 | 컴포넌트 | 역할 |

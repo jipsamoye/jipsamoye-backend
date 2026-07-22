@@ -43,8 +43,8 @@ public class FigurineServiceImpl implements FigurineService {
      */
     @Override
     public FigurineJobResponse createJob(FigurineJobCreateRequest request, Long userId) {
-        if (!request.sourceImageUrl().startsWith(cdnBaseUrl + "/")) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "지원하지 않는 이미지 URL입니다.");
+        if (!request.sourceImageUrl().startsWith(cdnBaseUrl + "/posts/" + userId + "/")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "본인이 업로드한 이미지만 사용할 수 있습니다.");
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -70,7 +70,9 @@ public class FigurineServiceImpl implements FigurineService {
     @Override
     @Transactional
     public FigurinePublishResponse publishJob(Long jobId, Long userId) {
-        FigurineJob job = findOwnedJob(jobId, userId);
+        FigurineJob job = figurineJobRepository.findWithLockById(jobId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.FIGURINE_JOB_NOT_FOUND));
+        validateOwner(job, userId);
         if (job.getPetPostId() != null) {
             throw new BusinessException(ErrorCode.FIGURINE_ALREADY_POSTED);
         }
@@ -86,9 +88,13 @@ public class FigurineServiceImpl implements FigurineService {
     private FigurineJob findOwnedJob(Long jobId, Long userId) {
         FigurineJob job = figurineJobRepository.findById(jobId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.FIGURINE_JOB_NOT_FOUND));
+        validateOwner(job, userId);
+        return job;
+    }
+
+    private void validateOwner(FigurineJob job, Long userId) {
         if (!job.getUser().getId().equals(userId)) {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
-        return job;
     }
 }
