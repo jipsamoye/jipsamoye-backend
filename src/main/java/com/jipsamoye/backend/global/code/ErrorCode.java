@@ -46,7 +46,8 @@ public enum ErrorCode {
     S3_UPLOAD_ERROR(500, "S3_UPLOAD_ERROR", "이미지 업로드에 실패했습니다."),
 
     // 502
-    NAVER_API_ERROR(502, "NAVER_API_ERROR", "네이버 API 호출에 실패했습니다.");
+    NAVER_API_ERROR(502, "NAVER_API_ERROR", "네이버 API 호출에 실패했습니다."),
+    FIGURINE_GENERATION_FAILED(502, "FIGURINE_GENERATION_FAILED", "AI 이미지 생성에 실패했습니다.");
 
     private final int status;
     private final String code;
