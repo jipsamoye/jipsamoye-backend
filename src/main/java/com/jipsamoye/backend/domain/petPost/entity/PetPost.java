@@ -52,12 +52,17 @@ public class PetPost extends BaseEntity {
     @Column(nullable = false)
     private int commentCount = 0;
 
+    // AI 자동 생성 게시글 여부 (figurine 자동 게시). 생성 시점에만 정해지며 수정되지 않는다.
+    @Column(nullable = false)
+    private boolean aiGenerated = false;
+
     @Builder
-    public PetPost(User user, String title, String content, List<String> imageUrls) {
+    public PetPost(User user, String title, String content, List<String> imageUrls, boolean aiGenerated) {
         this.user = user;
         this.title = title;
         this.content = content;
         this.imageUrls = imageUrls != null ? imageUrls : new ArrayList<>();
+        this.aiGenerated = aiGenerated;
     }
 
     public void update(String title, String content, List<String> imageUrls) {

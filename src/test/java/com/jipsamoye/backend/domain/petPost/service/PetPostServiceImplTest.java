@@ -3,7 +3,9 @@ package com.jipsamoye.backend.domain.petPost.service;
 import com.jipsamoye.backend.domain.image.service.ImageService;
 import com.jipsamoye.backend.domain.like.repository.LikeRepository;
 import com.jipsamoye.backend.domain.comment.repository.CommentRepository;
+import com.jipsamoye.backend.domain.petPost.dto.request.PetPostCreateRequest;
 import com.jipsamoye.backend.domain.petPost.dto.response.PetPostListResponse;
+import com.jipsamoye.backend.domain.petPost.dto.response.PetPostResponse;
 import com.jipsamoye.backend.domain.petPost.entity.PetPost;
 import com.jipsamoye.backend.domain.petPost.repository.PetPostRepository;
 import com.jipsamoye.backend.domain.user.entity.Provider;
@@ -75,6 +77,35 @@ class PetPostServiceImplTest {
         PetPost post = postBy(activeUser());
         ReflectionTestUtils.setField(post, "id", id);
         return post;
+    }
+
+    @Test
+    @DisplayName("일반 게시글 작성 시 aiGenerated는 false로 저장된다")
+    void createPost_default_savesAiGeneratedFalse() {
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(activeUser()));
+        when(petPostRepository.save(any(PetPost.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        petPostService.createPost(new PetPostCreateRequest("우리집 강아지", "귀여움",
+                List.of("https://cdn.example.com/img1.jpg")), 1L);
+
+        ArgumentCaptor<PetPost> captor = ArgumentCaptor.forClass(PetPost.class);
+        verify(petPostRepository).save(captor.capture());
+        assertThat(captor.getValue().isAiGenerated()).isFalse();
+    }
+
+    @Test
+    @DisplayName("aiGenerated=true로 작성하면 AI 생성 게시글로 저장되고 응답에도 true가 담긴다")
+    void createPost_aiGenerated_savesTrue() {
+        when(userRepository.findById(1L)).thenReturn(java.util.Optional.of(activeUser()));
+        when(petPostRepository.save(any(PetPost.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PetPostResponse response = petPostService.createPost(new PetPostCreateRequest("AI 키캡 자랑", null,
+                List.of("https://cdn.example.com/figurine.jpg")), 1L, true);
+
+        ArgumentCaptor<PetPost> captor = ArgumentCaptor.forClass(PetPost.class);
+        verify(petPostRepository).save(captor.capture());
+        assertThat(captor.getValue().isAiGenerated()).isTrue();
+        assertThat(response.aiGenerated()).isTrue();
     }
 
     @Test

@@ -12,7 +12,8 @@ public record PetPostListResponse(
         int commentCount,
         String nickname,
         String profileImageUrl,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean aiGenerated
 ) {
     // 탈퇴한 유저의 게시글은 닉네임을 "탈퇴한 사용자"로 마스킹하고 프로필 이미지는 null로 내려보낸다
     public static PetPostListResponse from(PetPost petPost) {
@@ -25,7 +26,8 @@ public record PetPostListResponse(
                 petPost.getCommentCount(),
                 isUserDeleted ? "탈퇴한 사용자" : petPost.getUser().getNickname(),
                 isUserDeleted ? null : petPost.getUser().getProfileImageUrl(),
-                petPost.getCreatedAt()
+                petPost.getCreatedAt(),
+                petPost.isAiGenerated()
         );
     }
 }
