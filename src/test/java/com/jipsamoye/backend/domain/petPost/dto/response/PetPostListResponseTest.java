@@ -72,4 +72,27 @@ class PetPostListResponseTest {
         assertThat(response.nickname()).isEqualTo("이미지없음");
         assertThat(response.profileImageUrl()).isNull();
     }
+
+    @Test
+    @DisplayName("일반 게시글이면 aiGenerated는 false다")
+    void from_normalPost_aiGeneratedFalse() {
+        PetPostListResponse response = PetPostListResponse.from(postBy(normalUser()));
+
+        assertThat(response.aiGenerated()).isFalse();
+    }
+
+    @Test
+    @DisplayName("AI 자동 생성 게시글이면 aiGenerated는 true다")
+    void from_aiGeneratedPost_aiGeneratedTrue() {
+        PetPost post = PetPost.builder()
+                .user(normalUser())
+                .title("AI 키캡 자랑")
+                .imageUrls(List.of("https://cdn.example.com/figurine.jpg"))
+                .aiGenerated(true)
+                .build();
+
+        PetPostListResponse response = PetPostListResponse.from(post);
+
+        assertThat(response.aiGenerated()).isTrue();
+    }
 }

@@ -30,6 +30,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -156,15 +158,16 @@ class FigurineServiceImplTest {
         FigurineJob job = ownedLockedJob(1L, 42L);
         job.complete(RESULT_URL);
         PetPostResponse post = new PetPostResponse(77L, "AI 키캡 자랑", null, List.of(RESULT_URL),
-                0, 0, "집사", null, LocalDateTime.now(), LocalDateTime.now());
-        when(petPostService.createPost(any(PetPostCreateRequest.class), any(Long.class))).thenReturn(post);
+                0, 0, "집사", null, LocalDateTime.now(), LocalDateTime.now(), true);
+        when(petPostService.createPost(any(PetPostCreateRequest.class), any(Long.class), anyBoolean())).thenReturn(post);
 
         FigurinePublishResponse response = figurineService.publishJob(1L, 42L);
 
         assertThat(response.petPostId()).isEqualTo(77L);
         assertThat(job.getPetPostId()).isEqualTo(77L);
         ArgumentCaptor<PetPostCreateRequest> captor = ArgumentCaptor.forClass(PetPostCreateRequest.class);
-        verify(petPostService).createPost(captor.capture(), any(Long.class));
+        // aiGenerated=true로 호출돼야 프론트가 "AI 키캡" 라벨을 제목 휴리스틱 없이 판별할 수 있다
+        verify(petPostService).createPost(captor.capture(), any(Long.class), eq(true));
         assertThat(captor.getValue().title()).isEqualTo("AI 키캡 자랑");
         assertThat(captor.getValue().imageUrls()).containsExactly(RESULT_URL);
     }

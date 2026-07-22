@@ -80,7 +80,7 @@ public class FigurineServiceImpl implements FigurineService {
             throw new BusinessException(ErrorCode.FIGURINE_JOB_NOT_COMPLETED);
         }
         PetPostResponse post = petPostService.createPost(
-                new PetPostCreateRequest(AUTO_POST_TITLE, null, List.of(job.getResultImageUrl())), userId);
+                new PetPostCreateRequest(AUTO_POST_TITLE, null, List.of(job.getResultImageUrl())), userId, true);
         job.linkPetPost(post.id());
         return new FigurinePublishResponse(post.id());
     }
