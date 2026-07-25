@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface DmService {
     List<DmRoomResponse> getRooms(Long userId);
-    DmRoomResponse createRoom(Long userId, String targetNickname);
+    DmRoomResponse createRoom(Long userId, String targetNickname, boolean create);
     PageResponse<DmMessageResponse> getMessages(Long roomId, Long userId, int page, int size);
     DmMessageResponse sendMessage(Long userId, Long roomId, String targetNickname, String content, String imageUrl);
     void markAsRead(Long userId, Long roomId);

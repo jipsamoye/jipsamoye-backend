@@ -48,13 +48,15 @@ public class DmServiceImpl implements DmService {
     }
 
     /**
-     * 채팅방을 resolve한다.
+     * 채팅방을 resolve하거나(기본) 선생성한다(create=true).
      * - 메시지가 있는 기존 방이면 그 방의 응답(roomId 포함)을 반환한다.
-     * - 방이 없거나 빈 방(메시지 미발생)이면 DB에 저장하지 않고 draft 응답(roomId = null)을 반환한다.
-     * 실제 방 생성(저장)은 첫 메시지 전송 시점({@link #sendMessage})에 이뤄진다.
+     * - create=true: 방이 없으면 즉시 생성하고, 빈 방이 있으면 재사용해 roomId를 반환한다.
+     *   클라이언트가 실제 roomId로 먼저 구독한 뒤 전송하게 하여 첫 메시지 에코 유실을 막는다.
+     *   빈 방은 목록 쿼리의 EXISTS(message) 필터로 노출되지 않는다.
+     * - create=false(구 클라이언트): 방이 없거나 빈 방이면 draft 응답(roomId=null) — 하위호환.
      */
     @Override
-    public DmRoomResponse createRoom(Long userId, String targetNickname) {
+    public DmRoomResponse createRoom(Long userId, String targetNickname, boolean create) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         User target = userRepository.findByNickname(targetNickname)
@@ -69,9 +71,18 @@ public class DmServiceImpl implements DmService {
                 long unread = dmMessageRepository.countUnread(existing, user);
                 return DmRoomResponseMapper.of(existing.getId(), target, lastMsg, unread);
             }
+            if (create) {
+                return DmRoomResponseMapper.of(existing.getId(), target, null, 0);
+            }
+            return DmRoomResponseMapper.of(null, target, null, 0);
         }
 
-        // 방이 없거나 빈 방 → 저장 없이 draft 응답(roomId=null, 마지막 메시지 없음)
+        if (create) {
+            // find-or-create는 키 정규화 + retry-on-conflict의 REQUIRES_NEW 트랜잭션에 위임
+            // (클래스 레벨 readOnly 트랜잭션과 무관하게 쓰기 가능).
+            Long roomId = dmRoomResolver.resolveOrCreateRoomId(user, target);
+            return DmRoomResponseMapper.of(roomId, target, null, 0);
+        }
         return DmRoomResponseMapper.of(null, target, null, 0);
     }
 

@@ -130,7 +130,7 @@ class DmServiceImplTest {
                     .thenReturn(Optional.of(lastMsg));
             when(dmMessageRepository.countUnread(existingRoom, user)).thenReturn(2L);
 
-            DmRoomResponse response = dmService.createRoom(1L, "냥집사");
+            DmRoomResponse response = dmService.createRoom(1L, "냥집사", false);
 
             assertThat(response.roomId()).isEqualTo(5L);
             assertThat(response.otherUserNickname()).isEqualTo("냥집사");
@@ -155,7 +155,7 @@ class DmServiceImplTest {
             when(dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(existingRoom))
                     .thenReturn(Optional.empty());
 
-            DmRoomResponse response = dmService.createRoom(1L, "냥집사");
+            DmRoomResponse response = dmService.createRoom(1L, "냥집사", false);
 
             assertThat(response.roomId()).isNull();
             assertThat(response.otherUserNickname()).isEqualTo("냥집사");
@@ -175,7 +175,7 @@ class DmServiceImplTest {
             when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
             when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
 
-            DmRoomResponse response = dmService.createRoom(1L, "냥집사");
+            DmRoomResponse response = dmService.createRoom(1L, "냥집사", false);
 
             assertThat(response.roomId()).isNull();
             assertThat(response.otherUserNickname()).isEqualTo("냥집사");
@@ -192,7 +192,7 @@ class DmServiceImplTest {
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.findByNickname("멍집사")).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> dmService.createRoom(1L, "멍집사"))
+            assertThatThrownBy(() -> dmService.createRoom(1L, "멍집사", false))
                     .isInstanceOf(BusinessException.class);
             verify(dmRoomRepository, never()).save(any(DmRoom.class));
         }
@@ -209,11 +209,102 @@ class DmServiceImplTest {
             when(userRepository.findByNickname("낯선유저")).thenReturn(Optional.of(target));
             when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
 
-            DmRoomResponse response = dmService.createRoom(1L, "낯선유저");
+            DmRoomResponse response = dmService.createRoom(1L, "낯선유저", false);
 
             assertThat(response.roomId()).isNull();
             assertThat(response.otherUserNickname()).isEqualTo("낯선유저");
             verify(dmRoomRepository, never()).save(any(DmRoom.class));
+        }
+
+        @Test
+        @DisplayName("create=true & 방 없음 - resolver로 방을 생성하고 roomId 반환")
+        void createRoom_createTrue_noRoom_createsAndReturnsRoomId() {
+            User user = mock(User.class);
+            User target = mock(User.class);
+            lenient().when(user.getId()).thenReturn(1L);
+            lenient().when(target.getId()).thenReturn(2L);
+            when(target.getNickname()).thenReturn("냥집사");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
+            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
+            when(dmRoomResolver.resolveOrCreateRoomId(user, target)).thenReturn(77L);
+
+            DmRoomResponse res = dmService.createRoom(1L, "냥집사", true);
+
+            assertThat(res.roomId()).isEqualTo(77L);
+            assertThat(res.lastMessage()).isNull();
+            assertThat(res.unreadCount()).isEqualTo(0L);
+            verify(dmRoomResolver).resolveOrCreateRoomId(user, target);
+        }
+
+        @Test
+        @DisplayName("create=true & 빈 방 존재 - 기존 방 roomId 재사용, resolver 미호출")
+        void createRoom_createTrue_emptyRoomExists_reusesExisting() {
+            User user = mock(User.class);
+            User target = mock(User.class);
+            lenient().when(user.getId()).thenReturn(1L);
+            lenient().when(target.getId()).thenReturn(2L);
+            when(target.getNickname()).thenReturn("냥집사");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
+            DmRoom emptyRoom = mock(DmRoom.class);
+            when(emptyRoom.getId()).thenReturn(55L);
+            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.of(emptyRoom));
+            when(dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(emptyRoom))
+                    .thenReturn(Optional.empty());
+
+            DmRoomResponse res = dmService.createRoom(1L, "냥집사", true);
+
+            assertThat(res.roomId()).isEqualTo(55L);
+            assertThat(res.lastMessage()).isNull();
+            verify(dmRoomResolver, never()).resolveOrCreateRoomId(any(), any());
+        }
+
+        @Test
+        @DisplayName("create=true & 메시지 있는 방 - 기존 방 응답 그대로, resolver 미호출")
+        void createRoom_createTrue_roomWithMessage_returnsExisting() {
+            User user = mock(User.class);
+            User target = mock(User.class);
+            lenient().when(user.getId()).thenReturn(1L);
+            lenient().when(target.getId()).thenReturn(2L);
+            when(target.getNickname()).thenReturn("냥집사");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
+            DmRoom room = mock(DmRoom.class);
+            when(room.getId()).thenReturn(10L);
+            DmMessage lastMsg = mock(DmMessage.class);
+            when(lastMsg.getContent()).thenReturn("마지막 메시지");
+            when(lastMsg.getCreatedAt()).thenReturn(LocalDateTime.of(2026, 7, 25, 12, 0));
+            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.of(room));
+            when(dmMessageRepository.findFirstByRoomOrderByCreatedAtDesc(room))
+                    .thenReturn(Optional.of(lastMsg));
+            when(dmMessageRepository.countUnread(room, user)).thenReturn(2L);
+
+            DmRoomResponse res = dmService.createRoom(1L, "냥집사", true);
+
+            assertThat(res.roomId()).isEqualTo(10L);
+            assertThat(res.lastMessage()).isEqualTo("마지막 메시지");
+            assertThat(res.unreadCount()).isEqualTo(2L);
+            verify(dmRoomResolver, never()).resolveOrCreateRoomId(any(), any());
+        }
+
+        @Test
+        @DisplayName("create=false & 방 없음 - 기존 draft 동작 보존 (roomId=null, 저장 없음)")
+        void createRoom_createFalse_noRoom_returnsDraft() {
+            User user = mock(User.class);
+            User target = mock(User.class);
+            lenient().when(user.getId()).thenReturn(1L);
+            lenient().when(target.getId()).thenReturn(2L);
+            when(target.getNickname()).thenReturn("냥집사");
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByNickname("냥집사")).thenReturn(Optional.of(target));
+            when(dmRoomRepository.findByUsers(user, target)).thenReturn(Optional.empty());
+
+            DmRoomResponse res = dmService.createRoom(1L, "냥집사", false);
+
+            assertThat(res.roomId()).isNull();
+            verify(dmRoomResolver, never()).resolveOrCreateRoomId(any(), any());
+            verify(dmRoomRepository, never()).save(any());
         }
     }
 
