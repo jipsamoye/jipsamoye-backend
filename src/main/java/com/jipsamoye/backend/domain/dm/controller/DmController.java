@@ -31,13 +31,14 @@ public class DmController {
         return ResponseEntity.ok(ApiResponse.success(dmService.getRooms(userDetails.getUserId())));
     }
 
-    @Operation(summary = "채팅방 생성")
+    @Operation(summary = "채팅방 resolve/생성", description = "create=true면 방이 없을 때 즉시 생성해 roomId를 반환한다")
     @PostMapping("/rooms")
     public ResponseEntity<ApiResponse<DmRoomResponse>> createRoom(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam String targetNickname) {
+            @RequestParam String targetNickname,
+            @RequestParam(defaultValue = "false") boolean create) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created(dmService.createRoom(userDetails.getUserId(), targetNickname)));
+                .body(ApiResponse.created(dmService.createRoom(userDetails.getUserId(), targetNickname, create)));
     }
 
     @Operation(summary = "메시지 목록 조회")
