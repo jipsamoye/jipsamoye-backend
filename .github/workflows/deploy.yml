@@ -6,6 +6,9 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+  # 수동 재배포용. push 트리거가 유실되는 경우(GitHub Actions 장애,
+  # paths-ignore로 스킵된 커밋 등) Actions 탭에서 직접 실행한다.
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
