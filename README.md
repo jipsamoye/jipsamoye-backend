@@ -146,7 +146,9 @@
 
 ### 이미지 파이프라인
 
-> 이미지는 presigned URL로 S3에 직접 업로드되고, Lambda가 썸네일을 만들어 Cloudflare CDN으로 서빙돼요.
+>  이미지는 presigned URL로 S3에 업로드되고 Lambda가 썸네일을 만들어 S3에 저장해요.
+> 
+>  조회 시에는 Cloudflare CDN이 서빙하고 캐시 MISS일 때만 S3 원본을 읽어요.
 
 <img width="100%" src="https://raw.githubusercontent.com/jipsamoye/.github/main/profile/resources/img/image-pipeline.png">
 
