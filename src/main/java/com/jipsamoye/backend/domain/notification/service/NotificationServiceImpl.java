@@ -3,6 +3,7 @@ package com.jipsamoye.backend.domain.notification.service;
 import com.jipsamoye.backend.domain.notification.dto.response.NotificationResponse;
 import com.jipsamoye.backend.domain.notification.entity.Notification;
 import com.jipsamoye.backend.domain.notification.entity.NotificationType;
+import com.jipsamoye.backend.domain.notification.event.NotificationCreatedEvent;
 import com.jipsamoye.backend.domain.notification.repository.NotificationRepository;
 import com.jipsamoye.backend.domain.user.entity.User;
 import com.jipsamoye.backend.domain.user.repository.UserRepository;
@@ -10,9 +11,9 @@ import com.jipsamoye.backend.global.code.ErrorCode;
 import com.jipsamoye.backend.global.exception.BusinessException;
 import com.jipsamoye.backend.global.response.PageResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -43,10 +44,11 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.save(notification);
 
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(receiver.getId()),
-                "/sub/notifications",
-                NotificationResponse.from(notification));
+        // WebSocket 전송은 커밋 후(AFTER_COMMIT 리스너)에 수행한다 —
+        // 전송 실패가 알림 저장을 롤백시키거나, 커밋 전 전송으로 유령 알림이 생기지 않도록
+        // payload는 LAZY 연관 접근이 가능한 트랜잭션 안에서 미리 만들어 담는다.
+        eventPublisher.publishEvent(new NotificationCreatedEvent(
+                receiver.getId(), NotificationResponse.from(notification)));
     }
 
     @Override
