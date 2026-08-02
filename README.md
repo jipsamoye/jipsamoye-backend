@@ -1,5 +1,8 @@
 <div align="center">
   <a href="https://www.jipsamoye.com"><img src="https://raw.githubusercontent.com/jipsamoye/.github/main/profile/resources/img/banner.png" width="100%"/></a>
+
+  >
+**서비스 주소**: https://www.jipsamoye.com/
 </div>
 
 <br>
@@ -35,9 +38,9 @@
 
 > 반려동물 일상을 ${\color{#F05A32}\textsf{게시글로 자랑}}$할 수 있어요.
 >
-> 내용은 ${\color{#F05A32}\textsf{생략해도 돼서}}$ 제목과 사진만으로 가볍게 올릴 수 있어요.
+> 내용 없이 ${\color{#F05A32}\textsf{제목과 사진만으로도}}$ 게시글을 작성할 수 있어요.
 >
-> 제목도 미리 준비된 ${\color{#F05A32}\textsf{추천 제목}}$을 골라 바로 완성할 수 있어요.
+> 제목이 고민된다면 ${\color{#F05A32}\textsf{추천 문구}}$ 중에서 선택해 보세요.
 
 |                          **데스크탑**                          |                          **모바일**                          |
 | :------------------------------------------------------------: | :------------------------------------------------------------: |
@@ -47,7 +50,7 @@
 
 ### 3. 메인 피드 — 구경하고 반응하기
 
-> ${\color{#F05A32}\textsf{이주의 자랑}}$과 ${\color{#F05A32}\textsf{최신 자랑글}}$을 구경하다가 마음에 드는 게시글을 바로 눌러볼 수 있어요.
+> 이번 주 자랑과 최신 자랑글을 구경하고 관심이 가는 게시글은 상세 페이지에서 자세히 살펴볼 수 있어요.
 >
 > 게시글 상세에서 ${\color{#F05A32}\textsf{좋아요·댓글}}$로 반응할 수 있어요.
 >
@@ -111,7 +114,7 @@
 
 ### 8. 로그인 · 검색 · 랭킹
 
-> 로그인 없이 둘러보기만으로도 모든 기능을 체험할 수 있어요.
+> ${\color{#F05A32}\textsf{둘러보기로 모든 기능을 체험할 수 있어요.}}$
 >
 > 제목 검색으로 원하는 자랑글을 빠르게 찾을 수 있어요.
 >
@@ -138,6 +141,14 @@
 ## 시스템 아키텍처
 
 <img width="100%" src="https://raw.githubusercontent.com/jipsamoye/.github/main/profile/resources/img/architecture.png">
+
+<br/>
+
+### 이미지 파이프라인
+
+> 이미지는 presigned URL로 S3에 직접 업로드되고, Lambda가 썸네일을 만들어 Cloudflare CDN으로 서빙돼요.
+
+<img width="100%" src="https://raw.githubusercontent.com/jipsamoye/.github/main/profile/resources/img/image-pipeline.png">
 
 <br/>
 <br/>
