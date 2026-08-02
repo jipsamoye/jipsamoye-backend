@@ -40,19 +40,17 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     }
 
     /**
-     * 클라이언트 inbound 채널 설정.
-     * <ul>
-     *   <li>{@link DmSubscriptionAuthInterceptor}: DM 방 토픽 SUBSCRIBE 인가(타인 DM 도청 차단).</li>
-     *   <li>명시적 ThreadPoolTaskExecutor: 기본 소형 풀에서 @MessageMapping 핸들러의 동기 DB I/O가
-     *       스레드를 점유해 무관한 사용자 메시지까지 직렬 지연되는 head-of-line blocking을 완화한다.</li>
-     * </ul>
+     * 클라이언트 inbound 채널 설정 — {@link DmSubscriptionAuthInterceptor}로
+     * DM 방 토픽 SUBSCRIBE 인가(타인 DM 도청 차단).
+     *
+     * <p>채널 스레드풀은 여기서 지정하지 않는다: Boot 3.2+의
+     * {@code WebSocketMessagingAutoConfiguration}이 인바운드/아웃바운드 채널에
+     * applicationTaskExecutor({@link TaskExecutorConfig})를 주입하며, 그 경로가
+     * {@code registration.taskExecutor()} 설정보다 우선하므로 여기에 풀 크기를
+     * 적어도 무시된다(과거 head-of-line 완화용 8~16 설정이 그렇게 죽은 설정이었다).
      */
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(dmSubscriptionAuthInterceptor);
-        registration.taskExecutor()
-                .corePoolSize(8)
-                .maxPoolSize(16)
-                .queueCapacity(1000);
     }
 }
