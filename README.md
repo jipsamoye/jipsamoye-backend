@@ -1,10 +1,8 @@
 <div align="center">
   <a href="https://www.jipsamoye.com"><img src="https://raw.githubusercontent.com/jipsamoye/.github/main/profile/resources/img/banner.png" width="100%"/></a>
 
->
+  >
 **서비스 주소**: https://www.jipsamoye.com/
-
-
 </div>
 
 <br>
@@ -143,6 +141,14 @@
 ## 시스템 아키텍처
 
 <img width="100%" src="https://raw.githubusercontent.com/jipsamoye/.github/main/profile/resources/img/architecture.png">
+
+<br/>
+
+### 이미지 파이프라인
+
+> 이미지는 presigned URL로 S3에 직접 업로드되고, Lambda가 썸네일을 만들어 Cloudflare CDN으로 서빙돼요.
+
+<img width="100%" src="https://raw.githubusercontent.com/jipsamoye/.github/main/profile/resources/img/image-pipeline.png">
 
 <br/>
 <br/>
