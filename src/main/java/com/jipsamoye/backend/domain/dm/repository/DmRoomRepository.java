@@ -27,7 +27,7 @@ public interface DmRoomRepository extends JpaRepository<DmRoom, Long> {
 
     @Query("SELECT r FROM DmRoom r WHERE (r.user1 = :user OR r.user2 = :user) " +
             "AND EXISTS (SELECT 1 FROM DmMessage m WHERE m.room = r) " +
-            "ORDER BY r.updatedAt DESC")
+            "ORDER BY (SELECT MAX(om.id) FROM DmMessage om WHERE om.room = r) DESC")
     List<DmRoom> findAllByUser(@Param("user") User user);
 
     /**
@@ -38,7 +38,7 @@ public interface DmRoomRepository extends JpaRepository<DmRoom, Long> {
      * <ul>
      *   <li>참여 방 필터: {@code user1.id = :userId OR user2.id = :userId}</li>
      *   <li>빈 방 제외: {@code EXISTS (message)}</li>
-     *   <li>정렬: {@code updatedAt DESC}</li>
+     *   <li>정렬: 마지막 메시지 {@code MAX(id) DESC} — 최근 대화 순</li>
      * </ul>
      *
      * <p>마지막 메시지는 {@code MAX(id)}로 식별한다(IDENTITY 단조 증가 → createdAt 타이에도 모호하지 않음).
@@ -56,6 +56,6 @@ public interface DmRoomRepository extends JpaRepository<DmRoom, Long> {
             + "FROM DmRoom r "
             + "WHERE (r.user1.id = :userId OR r.user2.id = :userId) "
             + "AND EXISTS (SELECT 1 FROM DmMessage m WHERE m.room = r) "
-            + "ORDER BY r.updatedAt DESC")
+            + "ORDER BY (SELECT MAX(om.id) FROM DmMessage om WHERE om.room = r) DESC")
     List<DmRoomProjection> findRoomSummaries(@Param("userId") Long userId);
 }

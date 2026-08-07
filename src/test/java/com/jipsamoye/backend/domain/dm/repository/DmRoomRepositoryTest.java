@@ -269,4 +269,45 @@ class DmRoomRepositoryTest {
                     .containsExactlyInAnyOrder(roomA.getId(), roomB.getId());
         }
     }
+
+    @Nested
+    @DisplayName("정렬 - 오래된 방에 새 메시지가 오면 목록 맨 위 (버그 재현: updatedAt은 방 생성 시각에 고정)")
+    class OrderingByLastMessage {
+
+        @Test
+        @DisplayName("findAllByUser - 먼저 만든 방에 최신 메시지가 오면 그 방이 맨 위")
+        void findAllByUser_ordersByLastMessageDesc() {
+            User user3 = userRepository.save(newUser("user3", "u3@test.com", "pid3"));
+
+            DmRoom olderRoom = newRoom(user1, user2);      // 방① 먼저 생성
+            sendMessage(olderRoom, user1, "방1 첫 메시지");
+            DmRoom newerRoom = newRoom(user1, user3);      // 방② 나중에 생성
+            sendMessage(newerRoom, user1, "방2 첫 메시지");
+
+            sendMessage(olderRoom, user2, "방1에 온 새 메시지"); // 오래된 방이 최신 대화가 됨
+
+            List<DmRoom> rooms = dmRoomRepository.findAllByUser(user1);
+
+            assertThat(rooms).extracting(DmRoom::getId)
+                    .containsExactly(olderRoom.getId(), newerRoom.getId());
+        }
+
+        @Test
+        @DisplayName("findRoomSummaries - 먼저 만든 방에 최신 메시지가 오면 그 방이 맨 위")
+        void findRoomSummaries_ordersByLastMessageDesc() {
+            User user3 = userRepository.save(newUser("user3", "u3@test.com", "pid3"));
+
+            DmRoom olderRoom = newRoom(user1, user2);
+            sendMessage(olderRoom, user1, "방1 첫 메시지");
+            DmRoom newerRoom = newRoom(user1, user3);
+            sendMessage(newerRoom, user1, "방2 첫 메시지");
+
+            sendMessage(olderRoom, user2, "방1에 온 새 메시지");
+
+            List<DmRoomProjection> summaries = dmRoomRepository.findRoomSummaries(user1.getId());
+
+            assertThat(summaries).extracting(DmRoomProjection::roomId)
+                    .containsExactly(olderRoom.getId(), newerRoom.getId());
+        }
+    }
 }
