@@ -41,7 +41,7 @@ public class DmServiceImpl implements DmService {
         }
 
         // 방 목록을 단일 프로젝션 쿼리로 가져와 N+1(방당 마지막 메시지·unread·LAZY 상대방)을 제거한다.
-        // findRoomSummaries는 findAllByUser와 동일한 필터(참여 방·EXISTS message)·정렬(updatedAt DESC)을 보존한다.
+        // findRoomSummaries는 findAllByUser와 동일한 필터(참여 방·EXISTS message)·정렬(마지막 메시지 MAX(id) DESC)을 보존한다.
         return dmRoomRepository.findRoomSummaries(userId).stream()
                 .map(DmRoomResponseMapper::from)
                 .toList();
