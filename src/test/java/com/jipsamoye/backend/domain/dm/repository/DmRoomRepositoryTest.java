@@ -246,7 +246,7 @@ class DmRoomRepositoryTest {
         }
 
         @Test
-        @DisplayName("여러 방을 findAllByUser와 동일한 updatedAt DESC 순서로 반환")
+        @DisplayName("여러 방을 findAllByUser와 동일한 순서(마지막 메시지 MAX(id) DESC)로 반환")
         void summaries_orderConsistentWithFindAllByUser() {
             User user3 = userRepository.save(newUser("user3", "u3@test.com", "pid3"));
 
@@ -255,8 +255,8 @@ class DmRoomRepositoryTest {
             DmRoom roomB = newRoom(user1, user3);
             sendMessage(roomB, user3, "B");
 
-            // 절대 타임스탬프 제어는 auditing 의존이라 불안정하므로, 동일 데이터에서
-            // 기존 findAllByUser(검증된 ORDER BY updatedAt DESC)와 순서가 일치하는지 비교한다.
+            // 두 쿼리가 같은 정렬 키(마지막 메시지 MAX(id) DESC)를 공유하는지 확인한다.
+            // 절대 순서 검증은 OrderingByLastMessage에서 별도로 수행한다.
             List<Long> expectedOrder = dmRoomRepository.findAllByUser(user1).stream()
                     .map(DmRoom::getId)
                     .toList();
